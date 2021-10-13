@@ -200,7 +200,17 @@ class CommonController:
     @check_context
     def create(cls, data: Dict[str, Any], *, session=None, context=None):
         try:
+            m2m = []
+            for key, value in data.copy().items():
+                rel = cls.model._sa_class_manager.get(key)  # pylint: disable=protected-access
+                if rel and getattr(rel.property, "uselist", None):  # ManyToMany
+                    data.pop(key)
+                    m2m.append((rel, key, value))
+                    continue
             record = cls.model(**data)
+            for rel, key, value in m2m:
+                field = getattr(record, key)
+                cls._set_m2m(rel.property.entity, field, value, session=session)
         except TypeError as e:
             raise ForbiddenError(e) from e
         cls._check_data(record, data, session=session, context=context)
