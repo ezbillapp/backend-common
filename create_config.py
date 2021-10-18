@@ -8,7 +8,7 @@ CHALICE_CONGIFIG_TEMPLATE_FILE = ".chalice/template.config.json"
 CHALICE_CONGIFIG_FILE = ".chalice/config.json"
 
 
-from .config import ENV_VARS, PROJECT_NAME, REGION_NAME
+from config import ENV_VARS, PROJECT_NAME, REGION_NAME
 
 
 def _get_key(stage, var):
