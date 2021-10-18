@@ -382,7 +382,7 @@ class CommonController:
             cls._check_to_update_data(data, session=session, context=context)
             for key, value in data.items():
                 rel = record._sa_class_manager.get(key)  # pylint: disable=protected-access
-                if rel and rel.property.uselist:  # ManyToMany
+                if rel and getattr(rel.property, "uselist", None):  # ManyToMany
                     field = getattr(record, key)
                     cls._set_m2m(rel.property.entity, field, value, session=session)
                     continue
