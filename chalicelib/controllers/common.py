@@ -361,6 +361,8 @@ class CommonController:
                 raise NotImplementedError(f"Action {action} not implemented")
             ids = ids if isinstance(ids, list) else ids and [ids] or []
             records = [session.query(model).get(id) for id in ids]
+            if None in records:
+                raise NotFoundError(f"ID's: {ids} not found")
             actions[action](model, field, records, session=session)
 
     @classmethod
