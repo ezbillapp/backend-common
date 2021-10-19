@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
+from chalice.app import MethodNotAllowedError
 from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
@@ -358,7 +359,7 @@ class CommonController:
         }
         for action, ids in value:
             if action not in actions or actions[action] is NotImplementedError:
-                raise NotImplementedError(f"Action {action} not implemented")
+                raise MethodNotAllowedError(f"Action {action} not implemented")
             ids = ids if isinstance(ids, list) else ids and [ids] or []
             records = [session.query(model).get(id) for id in ids]
             if None in records:
