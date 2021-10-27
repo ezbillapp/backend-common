@@ -57,6 +57,9 @@ class CommonController:
         "created_at",
         "updated_at",
     }
+    default_read_fields = {
+        "id",
+    }
 
     pseudo_enums: Dict[str, Set[str]] = {}
 
@@ -219,19 +222,72 @@ class CommonController:
         return record
 
     @classmethod
-    def record_to_dict(cls, record: Model) -> Dict[str, Any]:
-        return {
-            "id": record.id,
-            "created_at": record.created_at.isoformat(),
+    def is_m2m(cls, record, field: str) -> bool:
+        rel = record._sa_class_manager.get(field)  # pylint: disable=protected-access
+        return rel and getattr(rel.property, "uselist", None) and rel
+
+    @classmethod
+    def record_to_dict(cls, record: Model, fields_string: Set["str"]) -> Dict[str, Any]:
+        """Return a dictionary with the fields given (can use dot to indicate subfields) filled with the object data
+
+        Args:
+            record (Model): Record to convert
+            fields_string (Set[): Fields to retrieve
+
+        Returns:
+            Dict[str, Any]: Dictionary with the fields filled with the object data
+        """
+
+        def tokenize(fields: Set[str]) -> Dict[str, Any]:
+            """Split the fields using the dot character, creating a dict"""
+            result = {}
+            for field in fields:
+                parts = field.split(".")
+                current = result
+                for part in parts:
+                    current = current.setdefault(part, {})
+            return result
+
+        converters = {
+            datetime: lambda x: x.isoformat(),
         }
+
+        def obj_to_dict(obj, tokens: Dict[str, Any]):
+            """Create a dictionary based on the token fields"""
+            result = {}
+            for key, value in tokens.items():
+                real_value = getattr(obj, key)
+                m2m = cls.is_m2m(obj, key)
+                if value == {} and not isinstance(real_value, Model) and not m2m:
+                    if real_value.__class__ in converters:
+                        real_value = converters[real_value.__class__](real_value)
+                    result[key] = real_value
+                else:
+                    value.update({f: {} for f in cls.default_read_fields})
+                    if m2m or isinstance(real_value, list):
+                        result[key] = [obj_to_dict(x, value) for x in real_value]
+                    else:
+                        result[key] = obj_to_dict(getattr(obj, key), value)
+            return result
+
+        tokens = tokenize(fields_string)
+        return obj_to_dict(record, tokens)
 
     @classmethod
     @add_session
     @ensure_list
-    def detail(cls, records: List[Model], *, session=None, context=None) -> SearchResult:
+    def detail(
+        cls,
+        records: List[Model],
+        fields: Set[str] = None,
+        *,
+        session=None,
+        context=None,
+    ) -> SearchResult:
+        fields = set(fields or []) | cls.default_read_fields
         session.add_all(records)
         cls.ensure_role_access(records, session=session, context=context)
-        return [cls.record_to_dict(record) for record in records]
+        return [cls.record_to_dict(record, fields) for record in records]
 
     @classmethod
     @add_session
