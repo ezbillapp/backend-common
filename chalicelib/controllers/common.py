@@ -254,6 +254,8 @@ class CommonController:
 
         def obj_to_dict(obj, tokens: Dict[str, Any]):
             """Create a dictionary based on the token fields"""
+            if obj is None:
+                return None
             result = {}
             for key, value in tokens.items():
                 real_value = getattr(obj, key)
