@@ -206,10 +206,10 @@ class CommonController:
         try:
             m2m = []
             for key, value in data.copy().items():
-                rel = cls.model._sa_class_manager.get(key)  # pylint: disable=protected-access
-                if rel and getattr(rel.property, "uselist", None):  # ManyToMany
+                m2m_rel = cls.is_m2m(cls.model, key)
+                if m2m_rel:
                     data.pop(key)
-                    m2m.append((rel, key, value))
+                    m2m.append((m2m_rel, key, value))
                     continue
             record = cls.model(**data)
             for rel, key, value in m2m:
@@ -440,10 +440,10 @@ class CommonController:
             cls._check_data(record, data, session=session, context=context)
             cls._check_to_update_data(data, session=session, context=context)
             for key, value in data.items():
-                rel = record._sa_class_manager.get(key)  # pylint: disable=protected-access
-                if rel and getattr(rel.property, "uselist", None):  # ManyToMany
+                m2m_rel = cls.is_m2m(record, key)
+                if m2m_rel:
                     field = getattr(record, key)
-                    cls._set_m2m(rel.property.entity, field, value, session=session)
+                    cls._set_m2m(m2m_rel.property.entity, field, value, session=session)
                     continue
                 setattr(record, key, value)
             record.updated_at = datetime.now()
