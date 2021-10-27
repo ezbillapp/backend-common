@@ -13,20 +13,15 @@ cors_config = CORSConfig(
 
 
 def get_search_attrs(json_body):
-    fuzzy_search = json_body.get("fuzzy_search", None)
-    domain = json_body.get("domain", {})
-    order_by = json_body.get("order_by")
-    limit = json_body.get("limit", PAGE_SIZE)
-    offset = json_body.get("offset")
-    active = json_body.get("active", True)
-    return {
-        "fuzzy_search": fuzzy_search,
-        "domain": domain,
-        "order_by": order_by,
-        "limit": limit,
-        "offset": offset,
-        "active": active,
+    attr_list = {
+        "fuzzy_search": None,
+        "domain": {},
+        "order_by": None,
+        "limit": PAGE_SIZE,
+        "offset": None,
+        "active": True,
     }
+    return {attr: json_body.get(attr, default) for attr, default in attr_list.items()}
 
 
 def search(bp, controller):
