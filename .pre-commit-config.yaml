@@ -45,7 +45,7 @@ repos:
       - id: isort
         args: ["--profile=black"]
   - repo: https://github.com/hadialqattan/pycln
-    rev: v0.0.1-beta.3 # Possible releases: https://github.com/hadialqattan/pycln/tags
+    rev: v1.0.3 # Possible releases: https://github.com/hadialqattan/pycln/tags
     hooks:
       - id: pycln
         args: [-a]
