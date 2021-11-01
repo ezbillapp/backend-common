@@ -44,8 +44,8 @@ def main():
     stage = str(sys.argv[1])
 
     env_vars = gen_env_vars_dict(stage)
-    subnets = [env_vars.pop(env_var) for env_var in ("SUBNET_1", "SUBNET_2", "SUBNET_3")]
-    security_groups = [env_vars.pop(env_var) for env_var in tuple("SECURITY_GROUP")]
+    subnets = [env_vars.pop(env_var) for env_var in ["SUBNET_1", "SUBNET_2", "SUBNET_3"]]
+    security_groups = [env_vars.pop(env_var) for env_var in ["SECURITY_GROUP"]]
     env_vars["STAGE"] = stage
     save_env_vars_dict(
         CHALICE_CONGIFIG_TEMPLATE_FILE,
