@@ -33,7 +33,7 @@ def save_env_vars_dict(template_path, config_path, env_vars):
     """Writes all environment variables on build before deployment"""
     with open(template_path, "r") as f:
         content = json.loads(f.read())
-        content["stages"]["dev"]["environment_variables"] = env_vars
+        content["stages"]["stg"]["environment_variables"] = env_vars
         json.dump(content, open(config_path, "w"))
 
 
