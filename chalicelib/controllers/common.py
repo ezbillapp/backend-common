@@ -68,6 +68,11 @@ class CommonController:
     _order_by: str = ""
 
     @classmethod
+    def get_controllers_by_model(cls) -> Dict[Model, "CommonController"]:
+        controllers = CommonController.__subclasses__()
+        return {controller.model: controller for controller in controllers}
+
+    @classmethod
     @add_session
     def ensure_role_access(cls, records: List[Model], *, session=None, context=None):
         """To implement in each model"""
@@ -252,6 +257,8 @@ class CommonController:
             datetime: lambda x: x.isoformat(),
         }
 
+        controllers_by_model = cls.get_controllers_by_model()
+
         def obj_to_dict(obj, tokens: Dict[str, Any]):
             """Create a dictionary based on the token fields"""
             if obj is None:
@@ -265,7 +272,8 @@ class CommonController:
                         real_value = converters[real_value.__class__](real_value)
                     result[key] = real_value
                 else:
-                    value.update({f: {} for f in cls.default_read_fields})
+                    controller = controllers_by_model[real_value.__class__]
+                    value.update({f: {} for f in controller.default_read_fields})
                     if m2m or isinstance(real_value, list):
                         result[key] = [obj_to_dict(x, value) for x in real_value]
                     else:
