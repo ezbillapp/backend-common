@@ -132,7 +132,7 @@ class CommonController:
             query = query.filter(cls.model.active == active)
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
-        query = query.order_by(text(order_by))
+        query = query.order_by(f"{text(order_by)}")
         query = query.limit(limit + 1) if limit else query
         query = query.offset(limit * offset if (limit and offset) else 0)
         records = query.all()
