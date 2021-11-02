@@ -272,7 +272,7 @@ class CommonController:
                         real_value = converters[real_value.__class__](real_value)
                     result[key] = real_value
                 else:
-                    controller = controllers_by_model[real_value.__class__]
+                    controller = controllers_by_model.get(real_value.__class__, cls)
                     value.update({f: {} for f in controller.default_read_fields})
                     if m2m or isinstance(real_value, list):
                         result[key] = [obj_to_dict(x, value) for x in real_value]
