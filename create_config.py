@@ -29,13 +29,15 @@ def gen_env_vars_dict(stage: str) -> Dict[str, str]:
     return {var: _get_ssm_value(client, stage, var) for var in ENV_VARS}
 
 
-def save_env_vars_dict(template_path, config_path, env_vars, subnets, security_groups):
+def save_env_vars_dict(template_path, config_path, stage, env_vars, subnets, security_groups):
     """Writes all environment variables on build before deployment"""
     with open(template_path, "r") as f:
         content = json.loads(f.read())
-        content["stages"]["dev"]["environment_variables"] = env_vars
-        content["stages"]["dev"]["subnet_ids"] = subnets
-        content["stages"]["dev"]["security_group_ids"] = security_groups
+        content["stages"][stage] = {
+            "environment_variables": env_vars,
+            "subnet_ids": subnets,
+            "security_group_ids": security_groups,
+        }
         json.dump(content, open(config_path, "w"))
 
 
@@ -50,6 +52,7 @@ def main():
     save_env_vars_dict(
         CHALICE_CONGIFIG_TEMPLATE_FILE,
         CHALICE_CONGIFIG_FILE,
+        stage,
         env_vars,
         subnets,
         security_groups,
