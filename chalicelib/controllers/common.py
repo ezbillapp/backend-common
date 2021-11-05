@@ -18,6 +18,7 @@ from . import (
     ensure_list,
     ensure_set,
     filter_query,
+    is_m2m,
 )
 
 
@@ -123,7 +124,7 @@ class CommonController:
         session=None,
         context=None,
     ) -> List[Model]:
-        domain_parsed = filter_query(cls.model, domain)
+        domain_parsed = filter_query(cls.model, domain, session)
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
@@ -211,7 +212,7 @@ class CommonController:
         try:
             m2m = []
             for key, value in data.copy().items():
-                m2m_rel = cls.is_m2m(cls.model, key)
+                m2m_rel = is_m2m(cls.model, key)
                 if m2m_rel:
                     data.pop(key)
                     m2m.append((m2m_rel, key, value))
@@ -225,11 +226,6 @@ class CommonController:
         cls._check_data(record, data, session=session, context=context)
         session.add(record)
         return record
-
-    @classmethod
-    def is_m2m(cls, record, field: str) -> bool:
-        rel = record._sa_class_manager.get(field)  # pylint: disable=protected-access
-        return rel and getattr(rel.property, "uselist", None) and rel
 
     @classmethod
     def record_to_dict(cls, record: Model, fields_string: Set["str"]) -> Dict[str, Any]:
@@ -266,7 +262,7 @@ class CommonController:
             result = {}
             for key, value in tokens.items():
                 real_value = getattr(obj, key)
-                m2m = cls.is_m2m(obj, key)
+                m2m = is_m2m(obj, key)
                 if value == {} and not isinstance(real_value, Model) and not m2m:
                     if real_value.__class__ in converters:
                         real_value = converters[real_value.__class__](real_value)
@@ -450,7 +446,7 @@ class CommonController:
             cls._check_data(record, data, session=session, context=context)
             cls._check_to_update_data(data, session=session, context=context)
             for key, value in data.items():
-                m2m_rel = cls.is_m2m(record, key)
+                m2m_rel = is_m2m(record, key)
                 if m2m_rel:
                     field = getattr(record, key)
                     cls._set_m2m(m2m_rel.property.entity, field, value, session=session)

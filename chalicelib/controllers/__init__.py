@@ -31,9 +31,33 @@ MISSING_FIELD = False
 NUMERICS = {Integer, Float, Numeric}
 
 
-def get_filter(model, raw):
+def is_m2m(record, field: str) -> bool:
+    rel = record._sa_class_manager.get(field)  # pylint: disable=protected-access
+    return rel and getattr(rel.property, "uselist", None) and rel
+
+
+def get_model_from_relationship(relationship):
+    return relationship.property.mapper.class_
+
+
+def _get_filter_m2m(column, op, value, session):
+    if op not in ("in", "not in"):
+        raise BadRequestError(f"Invalid operator {op} for m2m field")
+    rel_model = get_model_from_relationship(column)
+    rel_objects = session.query(rel_model).get(value)
+    if not rel_objects:
+        raise BadRequestError(f"Invalid value {value} for m2m field")
+    res = column.contains(rel_objects)
+    if op == "not in":
+        res = ~res
+    return res
+
+
+def get_filter(model, raw, session):
     key, op, value = raw
     column = getattr(model, key)
+    if is_m2m(model, key):
+        return _get_filter_m2m(column, op, value, session)
     if hasattr(column.property, "mapper"):
         if value != "any":
             raise BadRequestError("Only value 'any' is accepted in relations")
@@ -44,15 +68,15 @@ def get_filter(model, raw):
         raise BadRequestError("Only the opertators '=' and '!=' are accepted in relations")
 
     if op == "in":
-        return column.in_(value.split(","))
+        return column.in_(value)
     real_op = operators[op]
     if value == "null":
         value = None
     return real_op(column, value)
 
 
-def filter_query(model, raw_filters):
-    return [get_filter(model, raw) for raw in raw_filters]
+def filter_query(model, raw_filters, session):
+    return [get_filter(model, raw, session) for raw in raw_filters]
 
 
 def ensure_list(f):
