@@ -40,24 +40,23 @@ def get_model_from_relationship(relationship):
     return relationship.property.mapper.class_
 
 
-def _get_filter_m2m(column, op, value, session):
+def _get_filter_m2m(column, op, value):
     if op not in ("in", "not in"):
         raise BadRequestError(f"Invalid operator {op} for m2m field")
     rel_model = get_model_from_relationship(column)
-    rel_objects = session.query(rel_model).get(value)
-    if not rel_objects:
-        raise BadRequestError(f"Invalid value {value} for m2m field")
-    res = column.contains(rel_objects)
+    res = column.any(rel_model.id.in_(value))
     if op == "not in":
         res = ~res
     return res
 
 
-def get_filter(model, raw, session):
+def get_filter(model, raw):
     key, op, value = raw
     column = getattr(model, key)
     if is_m2m(model, key):
-        return _get_filter_m2m(column, op, value, session)
+        if not isinstance(value, list):
+            raise BadRequestError(f"Invalid value for m2m field {key}, must be a list")
+        return _get_filter_m2m(column, op, value)
     if hasattr(column.property, "mapper"):
         if value != "any":
             raise BadRequestError("Only value 'any' is accepted in relations")
@@ -75,8 +74,8 @@ def get_filter(model, raw, session):
     return real_op(column, value)
 
 
-def filter_query(model, raw_filters, session):
-    return [get_filter(model, raw, session) for raw in raw_filters]
+def filter_query(model, raw_filters):
+    return [get_filter(model, raw) for raw in raw_filters]
 
 
 def ensure_list(f):

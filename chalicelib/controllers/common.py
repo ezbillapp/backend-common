@@ -124,7 +124,7 @@ class CommonController:
         session=None,
         context=None,
     ) -> List[Model]:
-        domain_parsed = filter_query(cls.model, domain, session)
+        domain_parsed = filter_query(cls.model, domain)
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
