@@ -145,8 +145,8 @@ class CommonController:
     def search(
         cls,
         domain: Domain,
-        order_by: str,
-        limit: int,
+        order_by: str = "",
+        limit: int = None,
         offset: int = 0,
         active: bool = True,
         fuzzy_search: str = None,
