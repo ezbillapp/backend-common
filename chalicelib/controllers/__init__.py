@@ -81,7 +81,9 @@ def filter_query(model, raw_filters):
 def ensure_list(f):
     @functools.wraps(f)
     def wrapper(cls, records, *args, **kwargs):
-        if not isinstance(records, List):
+        if records is None:
+            records = []
+        elif not isinstance(records, List):
             records = [records]
         return f(cls, records, *args, **kwargs)
 

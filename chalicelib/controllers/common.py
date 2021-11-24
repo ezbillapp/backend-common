@@ -1,3 +1,4 @@
+import enum
 import functools
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
@@ -251,9 +252,15 @@ class CommonController:
 
         converters = {
             datetime: lambda x: x.isoformat(),
+            enum.Enum: lambda x: x.name,
         }
 
         controllers_by_model = cls.get_controllers_by_model()
+
+        def get_class(field):
+            if issubclass(field.__class__, enum.Enum):
+                return enum.Enum
+            return field.__class__
 
         def obj_to_dict(obj, tokens: Dict[str, Any]):
             """Create a dictionary based on the token fields"""
@@ -264,8 +271,9 @@ class CommonController:
                 real_value = getattr(obj, key)
                 m2m = is_m2m(obj, key)
                 if value == {} and not isinstance(real_value, Model) and not m2m:
-                    if real_value.__class__ in converters:
-                        real_value = converters[real_value.__class__](real_value)
+                    value_class = get_class(real_value)
+                    if value_class in converters:
+                        real_value = converters[value_class](real_value)
                     result[key] = real_value
                 else:
                     controller = controllers_by_model.get(real_value.__class__, cls)
