@@ -42,7 +42,6 @@ def _get_x2m_cardinal_filter(column, op, value):
         return column.any()
     if op == "!=":
         return ~column.any()
-    raise BadRequestError("Only the opertators '=' and '!=' are accepted in cardinal relations")
 
 
 def _get_x2m_relational_filter(column, op, value):
@@ -58,13 +57,13 @@ def _get_x2m_relational_filter(column, op, value):
 
 
 def _get_filter_x2m(column, op, value):
-    if op == "=":
+    if op in ("=", "!="):
         return _get_x2m_cardinal_filter(column, op, value)
     return _get_x2m_relational_filter(column, op, value)
 
 
 def is_m2o(column):
-    return hasattr(column.property, "mapper")
+    return hasattr(column.property, "mapper") and not hasattr(column.property, "uselist")
 
 
 def is_x2m(model, field: str) -> bool:
