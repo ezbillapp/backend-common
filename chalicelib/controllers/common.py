@@ -112,7 +112,6 @@ class CommonController:
 
     @classmethod
     @add_session
-    @check_context
     def _search(
         cls,
         domain: Domain,
@@ -122,16 +121,19 @@ class CommonController:
         active: bool = True,
         fuzzy_search: str = None,
         *,
+        need_count: bool = False,
         session=None,
         context=None,
     ) -> List[Model]:
-        domain_parsed = filter_query(cls.model, domain)
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
+        domain_parsed = filter_query(cls.model, domain)
         query = query.filter(*domain_parsed)
         if "active" in cls.model.__table__.c:
             query = query.filter(cls.model.active == active)
+        if need_count:
+            count = query.count()
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
         query = query.order_by(text(order_by))
@@ -139,6 +141,8 @@ class CommonController:
         query = query.offset(limit * offset if (limit and offset) else 0)
         records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
+        if need_count:
+            return records, count
         return records
 
     @classmethod
@@ -156,7 +160,7 @@ class CommonController:
         context=None,
     ) -> SearchResultPaged:
         next_page = False
-        records = cls._search(
+        records, total_records = cls._search(
             domain,
             order_by,
             limit,
@@ -165,11 +169,12 @@ class CommonController:
             fuzzy_search,
             session=session,
             context=context,
+            need_count=True,
         )
         if limit and len(records) > limit:
             records.pop()
             next_page = True
-        return records, next_page
+        return records, next_page, total_records
 
     @classmethod
     @add_session

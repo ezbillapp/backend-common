@@ -41,11 +41,12 @@ def search(bp, controller):
     else:
         raise Exception("No token provided")
 
-    pos, next_page = controller.search(**search_attrs, context=context)
+    pos, next_page, total_records = controller.search(**search_attrs, context=context)
     dict_repr = controller.detail(pos, fields, context=context)
     return {
         "data": dict_repr,
         "next_page": next_page,
+        "total_records": total_records,
     }
 
 
