@@ -19,7 +19,7 @@ from . import (
     ensure_list,
     ensure_set,
     filter_query,
-    is_m2m,
+    is_x2m,
 )
 
 
@@ -213,7 +213,7 @@ class CommonController:
         try:
             m2m = []
             for key, value in data.copy().items():
-                m2m_rel = is_m2m(cls.model, key)
+                m2m_rel = is_x2m(cls.model, key)
                 if m2m_rel:
                     data.pop(key)
                     m2m.append((m2m_rel, key, value))
@@ -262,14 +262,14 @@ class CommonController:
                 return enum.Enum
             return field.__class__
 
-        def obj_to_dict(obj, tokens: Dict[str, Any]):
+        def obj_to_dict(record, tokens: Dict[str, Any]):
             """Create a dictionary based on the token fields"""
-            if obj is None:
+            if record is None:
                 return None
             result = {}
             for key, value in tokens.items():
-                real_value = getattr(obj, key)
-                m2m = is_m2m(obj, key)
+                real_value = getattr(record, key)
+                m2m = is_x2m(record, key)
                 if value == {} and not isinstance(real_value, Model) and not m2m:
                     value_class = get_class(real_value)
                     if value_class in converters:
@@ -281,7 +281,7 @@ class CommonController:
                     if m2m or isinstance(real_value, list):
                         result[key] = [obj_to_dict(x, value) for x in real_value]
                     else:
-                        result[key] = obj_to_dict(getattr(obj, key), value)
+                        result[key] = obj_to_dict(getattr(record, key), value)
             return result
 
         tokens = tokenize(fields_string)
@@ -454,7 +454,7 @@ class CommonController:
             cls._check_data(record, data, session=session, context=context)
             cls._check_to_update_data(data, session=session, context=context)
             for key, value in data.items():
-                m2m_rel = is_m2m(record, key)
+                m2m_rel = is_x2m(record, key)
                 if m2m_rel:
                     field = getattr(record, key)
                     cls._set_m2m(m2m_rel.property.entity, field, value, session=session)

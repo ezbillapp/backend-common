@@ -31,16 +31,23 @@ MISSING_FIELD = False
 NUMERICS = {Integer, Float, Numeric}
 
 
-def is_m2m(record, field: str) -> bool:
-    rel = record._sa_class_manager.get(field)  # pylint: disable=protected-access
-    return rel and getattr(rel.property, "uselist", None) and rel
-
-
 def get_model_from_relationship(relationship):
     return relationship.property.mapper.class_
 
 
-def _get_filter_m2m(column, op, value):
+def _get_x2m_cardinal_filter(column, op, value):
+    if value != "any":
+        raise BadRequestError("Only value 'any' is accepted in relations")
+    if op == "=":
+        return column.any()
+    if op == "!=":
+        return ~column.any()
+    raise BadRequestError("Only the opertators '=' and '!=' are accepted in cardinal relations")
+
+
+def _get_x2m_relational_filter(column, op, value):
+    if not isinstance(value, list):
+        raise BadRequestError(f"Invalid value for m2m field {column}, must be a list")
     if op not in ("in", "not in"):
         raise BadRequestError(f"Invalid operator {op} for m2m field")
     rel_model = get_model_from_relationship(column)
@@ -50,21 +57,38 @@ def _get_filter_m2m(column, op, value):
     return res
 
 
+def _get_filter_x2m(column, op, value):
+    if op == "=":
+        return _get_x2m_cardinal_filter(column, op, value)
+    return _get_x2m_relational_filter(column, op, value)
+
+
+def is_m2o(column):
+    return hasattr(column.property, "mapper")
+
+
+def is_x2m(model, field: str) -> bool:
+    rel = model._sa_class_manager.get(field)  # pylint: disable=protected-access
+    return rel and getattr(rel.property, "uselist", None) and rel
+
+
+def _get_filter_m2o(column, op, value):
+    if value != "any":
+        raise BadRequestError("Only value 'any' is accepted in relations")
+    if op == "=":
+        return column.has()
+    if op == "!=":
+        return ~column.has()
+    raise BadRequestError("Only the opertators '=' and '!=' are accepted in relations")
+
+
 def get_filter(model, raw):
     key, op, value = raw
     column = getattr(model, key)
-    if is_m2m(model, key):
-        if not isinstance(value, list):
-            raise BadRequestError(f"Invalid value for m2m field {key}, must be a list")
-        return _get_filter_m2m(column, op, value)
-    if hasattr(column.property, "mapper"):
-        if value != "any":
-            raise BadRequestError("Only value 'any' is accepted in relations")
-        if op == "=":
-            return column.any()
-        if op == "!=":
-            return ~column.any()
-        raise BadRequestError("Only the opertators '=' and '!=' are accepted in relations")
+    if is_m2o(column):
+        return _get_filter_m2o(column, op, value)
+    if is_x2m(model, key):
+        return _get_filter_x2m(column, op, value)
 
     if op == "in":
         return column.in_(value)
