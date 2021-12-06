@@ -10,7 +10,8 @@ from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
-from ..schema.models import Company, Model, Permission, User, Workspace
+from chalicelib.schema.models import Company, Model, Permission, User, Workspace
+
 from . import (
     Domain,
     SearchResult,
@@ -185,16 +186,16 @@ class CommonController:
     @classmethod
     def _check_data_key_value(cls, key, value):
         if key in cls.restricted_fields:
-            raise ForbiddenError("The field '{}' can not be setted manually".format(key))
+            raise ForbiddenError(f"The field '{key}' can not be setted manually")
         if key in cls.pseudo_enums and value not in cls.pseudo_enums[key]:
-            raise ForbiddenError("The field '{}' don not supports '{}' value".format(key, value))
+            raise ForbiddenError(f"The field '{key}' don not supports '{value}' value")
 
     @classmethod
     @add_session
     def _check_to_update_data(cls, data: Dict[str, Any], *, session=None, context=None):
         for key in data:
             if key in cls.restricted_update_fields:
-                raise ForbiddenError("The field '{}' can not be updated manually".format(key))
+                raise ForbiddenError(f"The field '{key}' can not be updated manually")
 
     @classmethod
     @add_session
@@ -235,7 +236,8 @@ class CommonController:
 
     @classmethod
     def record_to_dict(cls, record: Model, fields_string: Set["str"]) -> Dict[str, Any]:
-        """Return a dictionary with the fields given (can use dot to indicate subfields) filled with the object data
+        """Return a dictionary with the fields given (can use dot to indicate subfields)
+        filled with the object data
 
         Args:
             record (Model): Record to convert
