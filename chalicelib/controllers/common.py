@@ -63,6 +63,7 @@ class CommonController:
     default_read_fields = {
         "id",
     }
+    onchange_functions: Dict[str, Set[callable]] = {}
 
     pseudo_enums: Dict[str, Set[str]] = {}
 
@@ -446,6 +447,18 @@ class CommonController:
     @classmethod
     @add_session
     @ensure_list
+    def _onchange_fields(cls, fields: List[str], record: Model, *, session=None, context=None):
+        functions: Set[callable] = set()
+        for field in fields:
+            for function in cls.onchange_functions.get(field, set()):
+                functions.add(function)
+        for function in functions:
+            callable_function = function.__get__(object)
+            callable_function(record, session=session, context=context)
+
+    @classmethod
+    @add_session
+    @ensure_list
     @check_context
     def update(
         cls,
@@ -467,6 +480,7 @@ class CommonController:
                     cls._set_m2m(m2m_rel.property.entity, field, value, session=session)
                     continue
                 setattr(record, key, value)
+            cls._onchange_fields(list(data.keys()), record, session=session, context=context)
             record.updated_at = datetime.now()
         return records
 
