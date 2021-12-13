@@ -63,7 +63,7 @@ class CommonController:
     default_read_fields = {
         "id",
     }
-    onchange_functions: Dict[str, Set[Callable]] = {}
+    onchange_functions: Dict[str, List[Callable]] = {}
 
     pseudo_enums: Dict[str, Set[str]] = {}
 
