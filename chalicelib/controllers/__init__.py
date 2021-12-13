@@ -1,17 +1,18 @@
 import functools
 import operator
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError
 from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..schema import engine
+from chalicelib.schema import engine
+from chalicelib.schema.models.model import Model
 
 Domain = List[Tuple[str, str, Any]]
 SearchResult = List[Dict[str, Any]]
-SearchResultPaged = Tuple[SearchResult, int]
+SearchResultPaged = Tuple[SearchResult, bool, int]
 
 
 operators = {
@@ -66,7 +67,7 @@ def is_m2o(column):
     return hasattr(column.property, "mapper") and not hasattr(column.property, "uselist")
 
 
-def is_x2m(model, field: str) -> bool:
+def is_x2m(model: Type[Model], field: str) -> bool:
     rel = model._sa_class_manager.get(field)  # pylint: disable=protected-access
     return rel and getattr(rel.property, "uselist", None) and rel
 

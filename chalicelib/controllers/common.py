@@ -63,7 +63,7 @@ class CommonController:
     default_read_fields = {
         "id",
     }
-    onchange_functions: Dict[str, Set[callable]] = {}
+    onchange_functions: Dict[str, Set[Callable]] = {}
 
     pseudo_enums: Dict[str, Set[str]] = {}
 
@@ -72,7 +72,7 @@ class CommonController:
     _order_by: str = ""
 
     @classmethod
-    def get_controllers_by_model(cls) -> Dict[Model, "CommonController"]:
+    def get_controllers_by_model(cls) -> Dict[Type[Model], Type["CommonController"]]:
         controllers = CommonController.__subclasses__()
         return {controller.model: controller for controller in controllers}
 
@@ -250,7 +250,7 @@ class CommonController:
 
         def tokenize(fields: Set[str]) -> Dict[str, Any]:
             """Split the fields using the dot character, creating a dict"""
-            result = {}
+            result: Dict[str, Any] = {}
             for field in fields:
                 parts = field.split(".")
                 current = result
@@ -371,7 +371,7 @@ class CommonController:
 
     @classmethod
     @add_session
-    def _remove_from_m2m(cls, model, field, records: int, *, session=None):
+    def _remove_from_m2m(cls, model, field, records: List[Model], *, session=None):
         for record in records:
             if record in field:
                 field.remove(record)
@@ -380,7 +380,7 @@ class CommonController:
 
     @classmethod
     @add_session
-    def _delete_m2m_rel(cls, model, field, records: int, *, session=None):
+    def _delete_m2m_rel(cls, model, field, records: List[Model], *, session=None):
         for record in records:
             if record in field:
                 session.delete(record)
@@ -389,7 +389,7 @@ class CommonController:
 
     @classmethod
     @add_session
-    def _add_to_m2m(cls, model, field, records: int, *, session=None):
+    def _add_to_m2m(cls, model, field, records: List[Model], *, session=None):
         for record in records:
             if record in field:
                 raise ForbiddenError(f"{cls.log_records(record)} already in relation")
@@ -402,7 +402,7 @@ class CommonController:
 
     @classmethod
     @add_session
-    def _replace_all_from_m2m(cls, model, field, records: int, *, session=None):
+    def _replace_all_from_m2m(cls, model, field, records: List[Model], *, session=None):
         field.clear()
         records = [records] if not isinstance(records, list) else records
         field.extend(records)
@@ -448,7 +448,7 @@ class CommonController:
     @add_session
     @ensure_list
     def _onchange_fields(cls, fields: List[str], record: Model, *, session=None, context=None):
-        functions: Set[callable] = set()
+        functions: Set[Callable] = set()
         for field in fields:
             for function in cls.onchange_functions.get(field, set()):
                 functions.add(function)
