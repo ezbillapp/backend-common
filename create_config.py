@@ -1,4 +1,5 @@
 import json
+import logging
 import sys
 from typing import Dict
 
@@ -7,6 +8,7 @@ import boto3
 CHALICE_CONGIFIG_TEMPLATE_FILE = ".chalice/template.config.json"
 CHALICE_CONGIFIG_FILE = ".chalice/config.json"
 
+_logger = logging.getLogger(__name__)
 
 from config import ENV_VARS, PROJECT_NAME, REGION_NAME
 
@@ -22,8 +24,9 @@ def _get_ssm_value(client, stage, var):
         return client.get_parameter(Name=_get_key(stage, var), WithDecryption=True)["Parameter"][
             "Value"
         ]
-    except client.exceptions.ParameterNotFound as e:
-        raise Exception(f"Environment variable {var} not found") from e
+    except client.exceptions.ParameterNotFound:
+        _logger.error("Environment variable %s not found", var)
+        return None
 
 
 def gen_env_vars_dict(stage: str) -> Dict[str, str]:
