@@ -18,9 +18,12 @@ def _get_key(stage, var):
 
 def _get_ssm_value(client, stage, var):
     """Gets the value of the environment variable"""
-    return client.get_parameter(Name=_get_key(stage, var), WithDecryption=True)["Parameter"][
-        "Value"
-    ]
+    try:
+        return client.get_parameter(Name=_get_key(stage, var), WithDecryption=True)["Parameter"][
+            "Value"
+        ]
+    except client.exceptions.ParameterNotFound as e:
+        raise Exception(f"Environment variable {var} not found") from e
 
 
 def gen_env_vars_dict(stage: str) -> Dict[str, str]:
