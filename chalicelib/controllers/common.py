@@ -1,6 +1,6 @@
 import enum
 import functools
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
 import unidecode
@@ -260,6 +260,7 @@ class CommonController:
 
         converters = {
             datetime: lambda x: x.isoformat(),
+            date: lambda x: x.isoformat(),
             enum.Enum: lambda x: x.name,
         }
 
