@@ -64,7 +64,7 @@ def _get_filter_x2m(column, op, value):
 
 
 def is_m2o(column):
-    return hasattr(column.property, "mapper") and not hasattr(column.property, "uselist")
+    return hasattr(column.property, "mapper") and not getattr(column.property, "uselist")
 
 
 def is_x2m(model: Type[Model], field: str) -> bool:
