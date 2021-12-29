@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
-from chalice.app import MethodNotAllowedError
+from chalice.app import MethodNotAllowedError  # type: ignore
 from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
@@ -126,7 +126,7 @@ class CommonController:
         need_count: bool = False,
         session=None,
         context=None,
-    ) -> List[Model]:
+    ) -> Union[List[Model], Tuple[List[Model], int]]:
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
@@ -228,7 +228,7 @@ class CommonController:
             record = cls.model(**data)
             for rel, key, value in m2m:
                 field = getattr(record, key)
-                cls._set_m2m(rel.property.entity, field, value, session=session)
+                cls._set_m2m(rel.property.entity, field, value, session=session)  # type: ignore
         except TypeError as e:
             raise ForbiddenError(e) from e
         cls._check_data(record, data, session=session, context=context)
@@ -403,7 +403,9 @@ class CommonController:
 
     @classmethod
     @add_session
-    def _replace_all_from_m2m(cls, model, field, records: List[Model], *, session=None):
+    def _replace_all_from_m2m(
+        cls, model, field, records: Union[Model, List[Model]], *, session=None
+    ):
         field.clear()
         records = [records] if not isinstance(records, list) else records
         field.extend(records)
@@ -454,7 +456,7 @@ class CommonController:
             for function in cls.onchange_functions.get(field, set()):
                 functions.add(function)
         for function in functions:
-            callable_function = function.__get__(object)
+            callable_function = function.__get__(object)  # type: ignore
             callable_function(record, session=session, context=context)
 
     @classmethod
@@ -478,7 +480,7 @@ class CommonController:
                 m2m_rel = is_x2m(record, key)
                 if m2m_rel:
                     field = getattr(record, key)
-                    cls._set_m2m(m2m_rel.property.entity, field, value, session=session)
+                    cls._set_m2m(m2m_rel.property.entity, field, value, session=session)  # type: ignore
                     continue
                 setattr(record, key, value)
             cls._onchange_fields(list(data.keys()), record, session=session, context=context)
