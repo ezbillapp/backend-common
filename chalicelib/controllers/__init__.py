@@ -32,7 +32,7 @@ MISSING_FIELD = False
 NUMERICS = {Integer, Float, Numeric}
 
 
-def get_model_from_relationship(relationship):
+def get_model_from_relationship(relationship) -> Model:
     return relationship.property.mapper.class_
 
 
@@ -92,14 +92,34 @@ def get_filter(model, raw):
 
     if op == "in":
         return column.in_(value)
-    real_op = operators[op]
     if value == "null":
         value = None
+    real_op = operators[op]
     return real_op(column, value)
 
 
 def filter_query(model, raw_filters):
     return [get_filter(model, raw) for raw in raw_filters]
+
+
+def filter_query_doted(join_model, query, domain: Domain):
+    join_models = set()
+    filters = []
+    for raw in domain:
+        key, op, value = raw
+        tokens = key.split(".")
+        rels, field = tokens[:-1], tokens[-1]
+        current_model = join_model
+        for rel in rels:
+            attrib = getattr(current_model, rel)
+            current_model = get_model_from_relationship(attrib)
+            join_models.add(current_model)
+        real_op = operators[op]
+        column = getattr(current_model, field)
+        filters.append(real_op(column, value))
+    for join_model in join_models:
+        query = query.join(join_model)
+    return query.filter(*filters)
 
 
 def ensure_list(f):

@@ -20,6 +20,7 @@ from . import (
     ensure_list,
     ensure_set,
     filter_query,
+    filter_query_doted,
     is_x2m,
 )
 
@@ -130,7 +131,17 @@ class CommonController:
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
-        domain_parsed = filter_query(cls.model, domain)
+
+        domain_doted = []
+        domain_no_doted = []
+        for t in domain:
+            if t[0].find(".") != -1:
+                domain_doted.append(t)
+            else:
+                domain_no_doted.append(t)
+        query = filter_query_doted(cls.model, query, domain_doted)
+
+        domain_parsed = filter_query(cls.model, domain_no_doted)
         query = query.filter(*domain_parsed)
         if "active" in cls.model.__table__.c:
             query = query.filter(cls.model.active == active)
