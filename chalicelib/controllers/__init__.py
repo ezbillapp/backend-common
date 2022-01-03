@@ -118,7 +118,8 @@ def filter_query_doted(model, query, domain: Domain):
             prev_model = current_model
         real_op = operators[op]
         column = getattr(current_model, field)
-        filters.append(real_op(column, value))
+        filter = real_op(column, value)  # type: ignore
+        filters.append(filter)
     for jm, on in join_models.items():
         query = query.join(jm, on)
     return query.filter(*filters)
