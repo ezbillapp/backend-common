@@ -102,23 +102,25 @@ def filter_query(model, raw_filters):
     return [get_filter(model, raw) for raw in raw_filters]
 
 
-def filter_query_doted(join_model, query, domain: Domain):
-    join_models = set()
+def filter_query_doted(model, query, domain: Domain):
+    join_models = {}
     filters = []
     for raw in domain:
         key, op, value = raw
         tokens = key.split(".")
         rels, field = tokens[:-1], tokens[-1]
-        current_model = join_model
+        current_model = prev_model = model
         for rel in rels:
             attrib = getattr(current_model, rel)
             current_model = get_model_from_relationship(attrib)
-            join_models.add(current_model)
+            rel_id = f"{rel}_id"
+            join_models[current_model] = current_model.id == getattr(prev_model, rel_id)
+            prev_model = current_model
         real_op = operators[op]
         column = getattr(current_model, field)
         filters.append(real_op(column, value))
-    for join_model in join_models:
-        query = query.join(join_model)
+    for jm, on in join_models.items():
+        query = query.join(jm, on)
     return query.filter(*filters)
 
 
