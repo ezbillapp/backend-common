@@ -31,6 +31,8 @@ def export(bp, controller):
     temporal_token = headers.get("temporal_token")
 
     search_attrs = get_search_attrs(json_body)
+    search_attrs["limit"] = None
+    search_attrs["offset"] = None
     fields = json_body.get("fields", [])
     export_format = json_body.get("format", "csv")
 
