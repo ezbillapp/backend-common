@@ -1,9 +1,12 @@
+import base64
+import csv
 import enum
 import functools
 from datetime import date, datetime
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
 import unidecode
+from black import io
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
 from sqlalchemy import or_, text
@@ -23,6 +26,22 @@ from . import (
     filter_query_doted,
     is_x2m,
 )
+
+primitives = {
+    str,
+    int,
+    float,
+    bool,
+    date,
+    datetime,
+}
+PrimitiveType = Union[str, int, float, bool, date, datetime]
+
+
+class ExportFormat(enum.Enum):
+    CSV = "csv"
+    PDF = "zip"
+    XLSX = "zip"
 
 
 class unaccent(ReturnTypeFromArgs):  # pylint: disable=too-many-ancestors
@@ -128,7 +147,8 @@ class CommonController:
         session=None,
         context=None,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
-        query = session.query(cls.model)
+
+        query = session.query(cls.model).select_from(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
 
@@ -246,6 +266,22 @@ class CommonController:
         session.add(record)
         return record
 
+    @staticmethod
+    def _to_primitive(data) -> PrimitiveType:
+        def get_class(field):
+            if issubclass(field.__class__, enum.Enum):
+                return enum.Enum
+            return field.__class__
+
+        value_class = get_class(data)
+
+        converters = {
+            datetime: lambda x: x.isoformat(),
+            date: lambda x: x.isoformat(),
+            enum.Enum: lambda x: x.name,
+        }
+        return converters.get(value_class, lambda x: x)(data)
+
     @classmethod
     def record_to_dict(cls, record: Model, fields_string: Set["str"]) -> Dict[str, Any]:
         """Return a dictionary with the fields given (can use dot to indicate subfields)
@@ -269,18 +305,7 @@ class CommonController:
                     current = current.setdefault(part, {})
             return result
 
-        converters = {
-            datetime: lambda x: x.isoformat(),
-            date: lambda x: x.isoformat(),
-            enum.Enum: lambda x: x.name,
-        }
-
         controllers_by_model = cls.get_controllers_by_model()
-
-        def get_class(field):
-            if issubclass(field.__class__, enum.Enum):
-                return enum.Enum
-            return field.__class__
 
         def obj_to_dict(record, tokens: Dict[str, Any]):
             """Create a dictionary based on the token fields"""
@@ -291,9 +316,7 @@ class CommonController:
                 real_value = getattr(record, key)
                 m2m = is_x2m(record, key)
                 if value == {} and not isinstance(real_value, Model) and not m2m:
-                    value_class = get_class(real_value)
-                    if value_class in converters:
-                        real_value = converters[value_class](real_value)
+                    real_value = cls._to_primitive(real_value)
                     result[key] = real_value
                 else:
                     controller = controllers_by_model.get(real_value.__class__, cls)
@@ -344,13 +367,17 @@ class CommonController:
         if not_allowed_companies:
             raise UnauthorizedError(f"Companies `{not_allowed_companies}` not allowed")
 
+    @staticmethod
+    def get_model_name_from_records(records: List[Model]) -> str:
+        return records[0].__class__.__name__
+
     @classmethod
     @ensure_list
     def log_records(cls, records):
         if not records:
             return ""
-        model = records[0].__class__.__name__
-        return f"{model}({', '.join([str(r.id) for r in records])})"
+        model_name = cls.get_model_name_from_records(records)
+        return f"{model_name}({', '.join([str(r.id) for r in records])})"
 
     @classmethod
     @add_session
@@ -528,6 +555,43 @@ class CommonController:
     def get_owned_by(cls, user: User, *, session=None, context=None) -> List[Company]:
         session.add(user)
         return session.query(Workspace).filter(Workspace.owner_id == user.id).all()
+
+    @staticmethod
+    def to_csv(records: List[Model], fields: List[str], session, context) -> str:
+        def _plain_field(record: Model, field_str: str) -> Any:
+            res = record
+            for part in field_str.split("."):
+                res = getattr(res, part)
+            return CommonController._to_primitive(res)
+
+        session.add_all(records)
+        f = io.StringIO()
+        writer = csv.writer(f)
+        writer.writerow(fields)
+        for record in records:
+            writer.writerow([_plain_field(record, field) for field in fields])
+        return f.getvalue()
+
+    @staticmethod
+    @add_session
+    def export(
+        records: List[Model], fields: List[str], export_str: str, *, session, context
+    ) -> Dict[str, str]:
+        export_format = ExportFormat[export_str]
+        if export_format == ExportFormat.CSV:
+            csv_data = CommonController.to_csv(records, fields, session, context)
+            b64_data = base64.b64encode(csv_data.encode("UTF-8")).decode("utf-8")  # TODO?
+        else:
+            raise NotFoundError(f"Export format {export_format} not implemented")
+        model_name = CommonController.get_model_name_from_records(records)
+        now = datetime.now()
+        date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
+        filename = f"{model_name}_{date_str}.{export_format.value}"
+        return {
+            "data": b64_data,
+            "filename": filename,
+            "date": str(CommonController._to_primitive(now)),
+        }
 
 
 def get_m2m_repr(m2m_rel, attribs: Set[str]) -> List[Dict[str, Any]]:

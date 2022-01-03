@@ -24,6 +24,32 @@ def get_search_attrs(json_body):
     return {attr: json_body.get(attr, default) for attr, default in attr_list.items()}
 
 
+def export(bp, controller):
+    json_body = bp.current_request.json_body or {}
+    headers = bp.current_request.headers
+    token = headers.get("access_token")
+    temporal_token = headers.get("temporal_token")
+
+    search_attrs = get_search_attrs(json_body)
+    fields = json_body.get("fields", [])
+    export_format = json_body.get("format", "csv")
+
+    if token:
+        user = UserController.get_by_token(token)
+        context = {"user": user}
+    elif temporal_token:
+        context = {"guest_partner": True}
+    else:
+        raise Exception("No token provided")
+
+    records = controller._search(  # pylint: disable=protected-access
+        **search_attrs, context=context
+    )
+    return controller.export(
+        records, fields, export_format, context=context
+    )  # TODO download from S3?
+
+
 def search(bp, controller):
     json_body = bp.current_request.json_body or {}
     headers = bp.current_request.headers
