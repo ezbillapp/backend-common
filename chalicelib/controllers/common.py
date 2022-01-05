@@ -1,12 +1,12 @@
-import base64
 import csv
 import enum
 import functools
 from datetime import date, datetime
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
+import boto3
 import unidecode
-from black import io
+from black import io, os
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
 from sqlalchemy import or_, text
@@ -26,6 +26,9 @@ from . import (
     filter_query_doted,
     is_x2m,
 )
+
+EXPORT_BUCKET = os.environ["S3_EXPORT_BUCKET"]
+EXPORT_EXPIRATION = 60 * 60 * 2
 
 primitives = {
     str,
@@ -557,7 +560,7 @@ class CommonController:
         return session.query(Workspace).filter(Workspace.owner_id == user.id).all()
 
     @staticmethod
-    def to_csv(records: List[Model], fields: List[str], session, context) -> str:
+    def to_csv(records: List[Model], fields: List[str], session, context) -> bytes:
         def _plain_field(record: Model, field_str: str) -> Any:
             res = record
             for part in field_str.split("."):
@@ -570,7 +573,7 @@ class CommonController:
         writer.writerow(fields)
         for record in records:
             writer.writerow([_plain_field(record, field) for field in fields])
-        return f.getvalue()
+        return f.getvalue().encode("utf-8")
 
     @staticmethod
     @add_session
@@ -579,18 +582,30 @@ class CommonController:
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         if export_format == ExportFormat.CSV:
-            csv_data = CommonController.to_csv(records, fields, session, context)
-            b64_data = base64.b64encode(csv_data.encode("UTF-8")).decode("utf-8")  # TODO?
+            data_bytes = CommonController.to_csv(records, fields, session, context)
         else:
             raise NotFoundError(f"Export format {export_format} not implemented")
         model_name = CommonController.get_model_name_from_records(records)
         now = datetime.now()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
         filename = f"{model_name}_{date_str}.{export_format.value}"
+
+        s3_client = boto3.client("s3")
+        s3_client.upload_fileobj(  # TODO deal with colisions
+            io.BytesIO(data_bytes),
+            EXPORT_BUCKET,
+            filename,
+        )
+        s3_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": EXPORT_BUCKET,
+                "Key": filename,
+            },
+            ExpiresIn=EXPORT_EXPIRATION,
+        )
         return {
-            "data": b64_data,
-            "filename": filename,
-            "date": str(CommonController._to_primitive(now)),
+            "url": s3_url,
         }
 
 
