@@ -1,7 +1,7 @@
 from chalice import CORSConfig
 
-from ..config import PAGE_SIZE
-from ..controllers.user import UserController
+from chalicelib.config import PAGE_SIZE
+from chalicelib.controllers.user import UserController
 
 cors_config = CORSConfig(
     allow_origin="*",
