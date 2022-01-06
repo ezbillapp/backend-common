@@ -28,7 +28,7 @@ from . import (
     is_x2m,
 )
 
-EXPORT_BUCKET = os.environ["S3_EXPORT_BUCKET"]
+EXPORT_BUCKET = os.environ.get("S3_EXPORT_BUCKET")
 EXPORT_EXPIRATION = 60 * 60 * 2
 
 primitives = {
