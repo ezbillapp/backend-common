@@ -1,12 +1,13 @@
 import csv
 import enum
 import functools
+import io
+import os
 from datetime import date, datetime
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
 import boto3
 import unidecode
-from black import io, os
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
 from sqlalchemy import or_, text
