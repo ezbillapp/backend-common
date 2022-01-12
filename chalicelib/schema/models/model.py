@@ -5,7 +5,7 @@ from sqlalchemy import Column, DateTime, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import Table
 
-from .. import meta
+from chalicelib.schema import meta
 
 Base: Any = declarative_base(metadata=meta)
 

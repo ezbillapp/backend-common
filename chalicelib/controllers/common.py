@@ -14,9 +14,7 @@ from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
-from chalicelib.schema.models import Company, Model, Permission, User, Workspace
-
-from . import (
+from chalicelib.controllers import (
     Domain,
     SearchResult,
     SearchResultPaged,
@@ -27,6 +25,7 @@ from . import (
     filter_query_doted,
     is_x2m,
 )
+from chalicelib.schema.models import Company, Model, Permission, User, Workspace
 
 EXPORT_BUCKET = os.environ.get("S3_EXPORT_BUCKET")
 EXPORT_EXPIRATION = 60 * 60 * 2
