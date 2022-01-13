@@ -137,6 +137,8 @@ class CommonController:
 
     @staticmethod
     def _normalize_order_by(model: Model, order_by: str) -> str:
+        table_name = model.__table__.name
+        order_by = order_by.replace(f"{table_name}.", "")
         attrs = order_by.split(", ")
         new_attrs = [f"{model.__table__.name}.{attr}" for attr in attrs]
         return ", ".join(new_attrs)
