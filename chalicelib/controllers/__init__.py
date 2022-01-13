@@ -112,9 +112,14 @@ def filter_query_doted(model, query, domain: Domain):
         current_model = prev_model = model
         for rel in rels:
             attrib = getattr(current_model, rel)
+            tmp_model = current_model
             current_model = get_model_from_relationship(attrib)
-            rel_id = f"{rel}_id"
-            join_models[current_model] = current_model.id == getattr(prev_model, rel_id)
+            if is_x2m(tmp_model, rel):
+                rel_id = f"{prev_model.__table__.name}_id"
+                join_models[current_model] = getattr(current_model, rel_id) == prev_model.id
+            else:
+                rel_id = f"{rel}_id"
+                join_models[current_model] = current_model.id == getattr(prev_model, rel_id)
             prev_model = current_model
         real_op = operators[op]
         column = getattr(current_model, field)

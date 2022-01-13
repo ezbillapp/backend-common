@@ -135,6 +135,12 @@ class CommonController:
             order_by = "name"
         return order_by + ", id" if order_by else "id"
 
+    @staticmethod
+    def _normalize_order_by(model: Model, order_by: str) -> str:
+        attrs = order_by.split(", ")
+        new_attrs = [f"{model.__table__.name}.{attr}" for attr in attrs]
+        return ", ".join(new_attrs)
+
     @classmethod
     @add_session
     def _search(
@@ -172,6 +178,7 @@ class CommonController:
             count = query.count()
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
+        order_by = cls._normalize_order_by(cls.model, order_by)
         query = query.order_by(text(order_by))
         query = query.limit(limit + 1) if limit else query
         query = query.offset(limit * offset if (limit and offset) else 0)
