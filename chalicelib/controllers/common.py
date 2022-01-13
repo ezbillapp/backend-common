@@ -617,6 +617,11 @@ class CommonController:
             "url": s3_url,
         }
 
+    @staticmethod
+    @add_session
+    def resume(domain: Domain, fuzzy_search: str = None, *, session=None, context):
+        raise MethodNotAllowedError("Resume not implemented")
+
 
 def get_m2m_repr(m2m_rel, attribs: Set[str]) -> List[Dict[str, Any]]:
     return [

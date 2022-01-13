@@ -1,6 +1,7 @@
 from chalice import CORSConfig
 
 from chalicelib.config import PAGE_SIZE
+from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
 
 cors_config = CORSConfig(
@@ -24,7 +25,7 @@ def get_search_attrs(json_body):
     return {attr: json_body.get(attr, default) for attr, default in attr_list.items()}
 
 
-def export(bp, controller):
+def export(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     headers = bp.current_request.headers
     token = headers.get("access_token")
@@ -52,7 +53,7 @@ def export(bp, controller):
     )  # TODO download from S3?
 
 
-def search(bp, controller):
+def search(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     headers = bp.current_request.headers
     token = headers.get("access_token")
@@ -78,7 +79,7 @@ def search(bp, controller):
     }
 
 
-def create(bp, controller):
+def create(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     token = bp.current_request.headers["access_token"]
 
@@ -91,7 +92,7 @@ def create(bp, controller):
     return dict_repr[0]
 
 
-def update(bp, controller):
+def update(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     token = bp.current_request.headers["access_token"]
 
@@ -104,7 +105,7 @@ def update(bp, controller):
     return controller.detail(pos, context=context)  # TODO: add `fields`
 
 
-def delete(bp, controller):
+def delete(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     token = bp.current_request.headers["access_token"]
 
@@ -114,3 +115,14 @@ def delete(bp, controller):
     pos = controller.get(ids, context=context)
     ids = controller.delete(pos, context=context)
     return {"deleted": list(ids)}
+
+
+def resume(bp, controller: CommonController):
+    json_body = bp.current_request.json_body or {}
+    token = bp.current_request.headers["access_token"]
+
+    domain = json_body.get("domain", [])
+    fuzzy_search = json_body.get("fuzzy_search", [])
+    user = UserController.get_by_token(token)
+    context = {"user": user}
+    return controller.resume(domain, fuzzy_search, context=context)
