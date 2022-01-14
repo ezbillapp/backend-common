@@ -584,17 +584,17 @@ class CommonController:
             writer.writerow([_plain_field(record, field) for field in fields])
         return f.getvalue().encode("utf-8")
 
-    @staticmethod
+    @classmethod
     @add_session
     def export(
-        records: List[Model], fields: List[str], export_str: str, *, session, context
+        cls, records: List[Model], fields: List[str], export_str: str, *, session, context
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         if export_format == ExportFormat.CSV:
-            data_bytes = CommonController.to_csv(records, fields, session, context)
+            data_bytes = cls.to_csv(records, fields, session, context)
         else:
             raise NotFoundError(f"Export format {export_format} not implemented")
-        model_name = CommonController.get_model_name_from_records(records)
+        model_name = cls.model.__name__
         now = datetime.now()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
         filename = f"{model_name}_{date_str}.{export_format.value}"
