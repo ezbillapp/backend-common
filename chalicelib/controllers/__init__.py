@@ -171,3 +171,16 @@ def add_session(f):
         return res
 
     return wrapper
+
+
+def ensure_dict_by_ids(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        dict_by_ids = args[1]
+        if not isinstance(dict_by_ids, Dict):
+            raise BadRequestError("Invalid dict_by_ids")
+        dict_by_ids = {int(k): v for k, v in dict_by_ids.items()}
+        args = args[:1] + (dict_by_ids,) + args[2:]
+        return f(*args, **kwargs)
+
+    return wrapper
