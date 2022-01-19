@@ -136,7 +136,7 @@ class CommonController:
         return order_by + ", id" if order_by else "id"
 
     @staticmethod
-    def _normalize_order_by(model: Model, order_by: str) -> str:
+    def _normalize_order_by(model: Type[Model], order_by: str) -> str:
         table_name = model.__table__.name
         order_by = order_by.replace(f"{table_name}.", "")
         attrs = order_by.split(", ")
