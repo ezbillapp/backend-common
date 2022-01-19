@@ -92,6 +92,8 @@ def get_filter(model, raw):
 
     if op == "in":
         return column.in_(value)
+    if op == "not in":
+        return ~column.in_(value)
     if value == "null":
         value = None
     real_op = operators[op]
@@ -121,10 +123,7 @@ def filter_query_doted(model, query, domain: Domain):
                 rel_id = f"{rel}_id"
                 join_models[current_model] = current_model.id == getattr(prev_model, rel_id)
             prev_model = current_model
-        real_op = operators[op]
-        column = getattr(current_model, field)
-        filter = real_op(column, value)  # type: ignore
-        filters.append(filter)
+        filters.append(get_filter(current_model, (field, op, value)))
     for jm, on in join_models.items():
         query = query.join(jm, on)
     return query.filter(*filters)

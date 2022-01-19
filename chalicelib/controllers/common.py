@@ -97,7 +97,7 @@ class CommonController:
     @classmethod
     def get_controllers_by_model(cls) -> Dict[Type[Model], Type["CommonController"]]:
         controllers = CommonController.__subclasses__()
-        return {controller.model: controller for controller in controllers}
+        return {getattr(controller, "model", ""): controller for controller in controllers}
 
     @classmethod
     @add_session
