@@ -48,9 +48,7 @@ def export(bp, controller: CommonController):
     records = controller._search(  # pylint: disable=protected-access
         **search_attrs, context=context
     )
-    return controller.export(
-        records, fields, export_format, context=context
-    )  # TODO download from S3?
+    return controller.export(records, fields, export_format, context=context)
 
 
 def search(bp, controller: CommonController):
@@ -88,7 +86,7 @@ def create(bp, controller: CommonController):
     po = controller.create(
         json_body, context=context
     )  # TODO use `data` section and allow list of values
-    dict_repr = controller.detail(po, context=context)  # TODO add `fields`
+    dict_repr = controller.detail(po, context=context)
     return dict_repr[0]
 
 
@@ -102,7 +100,7 @@ def update(bp, controller: CommonController):
     context = {"user": user}
     pos = controller.get(ids, context=context)
     controller.update(pos, values, context=context)
-    return controller.detail(pos, context=context)  # TODO: add `fields`
+    return controller.detail(pos, context=context)
 
 
 def delete(bp, controller: CommonController):
