@@ -23,6 +23,7 @@ from chalicelib.controllers import (
     ensure_set,
     filter_query,
     filter_query_doted,
+    is_super_user,
     is_x2m,
 )
 from chalicelib.schema.models import Company, Model, Permission, User, Workspace
@@ -57,7 +58,7 @@ def check_context(f):
         context = kwargs.get("context", {}) or {}
         kwargs["context"] = context
         res = f(*args, **kwargs)
-        if not context.get("super_user") and not context.get("guest_user"):  # TODO
+        if not is_super_user(context) and not context.get("guest_user"):  # TODO
             cls = args[0]
             session = kwargs["session"]
             cls.check_companies(res, session=session, context=context)
@@ -251,7 +252,7 @@ class CommonController:
             raise ForbiddenError(
                 f"The inactive records {cls.log_records(record)} cannot be updated"
             )
-        if context.get("super_user"):
+        if is_super_user(context):
             return
         for key, value in data.items():
             cls._check_data_key_value(key, value)

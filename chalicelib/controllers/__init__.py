@@ -2,7 +2,7 @@ import functools
 import operator
 from typing import Any, Dict, List, Set, Tuple, Type
 
-from chalice import BadRequestError
+from chalice import BadRequestError, ForbiddenError
 from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -183,3 +183,26 @@ def ensure_dict_by_ids(f):
         return f(*args, **kwargs)
 
     return wrapper
+
+
+def is_super_user(context: Dict[str, Any]):
+    return "super_user" in context  # TODO user another technique
+
+
+def ensure_super_user(context: Dict[str, Any], message="do this"):
+    if not is_super_user(context):
+        raise ForbiddenError(f"Only super users can {message}")
+
+
+def scale_to_super_user(context: Dict[str, Any] = None):
+    if context is None:
+        context = {}
+    context["super_user"] = True
+    return context
+
+
+def remove_super_user(context: Dict[str, Any] = None):
+    if context is None:
+        context = {}
+    context.pop("super_user", None)
+    return context
