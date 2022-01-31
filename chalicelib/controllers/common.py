@@ -622,7 +622,7 @@ class CommonController:
         with ZipFile(f, "w") as zf:
             for row in urls:
                 uuid, url = row["uuid"], row["xml_url"]
-                xml = requests.get(url).content
+                xml = requests.get(url).content  # TODO async
                 zf.writestr(f"{uuid}.xml", xml)
         return f.getvalue()
 
