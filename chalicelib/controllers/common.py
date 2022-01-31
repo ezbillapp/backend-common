@@ -264,8 +264,7 @@ class CommonController:
         try:
             m2m = []
             for key, value in data.copy().items():
-                m2m_rel = is_x2m(cls.model, key)
-                if m2m_rel:
+                if m2m_rel := is_x2m(cls.model, key):
                     data.pop(key)
                     m2m.append((m2m_rel, key, value))
                     continue
@@ -376,8 +375,7 @@ class CommonController:
         allowed_companies_ids = {company.id for company in allowed_companies}
         session.add_all(records)
         company_ids = cls.get_company_ids(records, session=session)
-        not_allowed_companies = company_ids - allowed_companies_ids
-        if not_allowed_companies:
+        if not_allowed_companies := company_ids - allowed_companies_ids:
             raise UnauthorizedError(f"Companies `{not_allowed_companies}` not allowed")
 
     @staticmethod
@@ -528,8 +526,7 @@ class CommonController:
             cls._check_data(record, data, session=session, context=context)
             cls._check_to_update_data(data, session=session, context=context)
             for key, value in data.items():
-                m2m_rel = is_x2m(record, key)
-                if m2m_rel:
+                if m2m_rel := is_x2m(record, key):
                     field = getattr(record, key)
                     cls._set_m2m(m2m_rel.property.entity, field, value, session=session)  # type: ignore
                     continue
