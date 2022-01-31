@@ -4,15 +4,16 @@ import functools
 import io
 import os
 from datetime import date, datetime
-from email import header
-from tempfile import TemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
+from zipfile import ZipFile
 
 import boto3
-import pandas as pd
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
@@ -54,6 +55,15 @@ class ExportFormat(enum.Enum):
 
 class unaccent(ReturnTypeFromArgs):  # pylint: disable=too-many-ancestors
     pass
+
+
+def _plain_field(record: Model, field_str: str) -> Any:
+    res = record
+    for part in field_str.split("."):
+        if not res:
+            continue
+        res = getattr(res, part)
+    return CommonController._to_primitive(res)
 
 
 def check_context(f):
@@ -572,13 +582,6 @@ class CommonController:
 
     @staticmethod
     def to_csv(records: List[Model], fields: List[str], session, context) -> bytes:
-        def _plain_field(record: Model, field_str: str) -> Any:
-            res = record
-            for part in field_str.split("."):
-                if not res:
-                    continue
-                res = getattr(res, part)
-            return CommonController._to_primitive(res)
 
         session.add_all(records)
         f = io.StringIO()
@@ -590,11 +593,31 @@ class CommonController:
 
     @staticmethod
     def to_xlsx(records: List[Model], fields: List[str], session, context) -> bytes:
-        csv = CommonController.to_csv(records, fields, session, context)
-        with TemporaryFile() as f:
-            pd.read_csv(io.BytesIO(csv)).to_excel(f, index=None, header=True)
-            f.seek(0)
-            return f.read()
+        session.add_all(records)
+        wb = Workbook()
+        ws = wb.active
+        ws.append(fields)
+        for record in records:
+            data = [_plain_field(record, field) for field in fields]
+            ws.append(data)
+        for column_cells in ws.columns:
+            length = max(len(str(cell.value)) for cell in column_cells)
+            ws.column_dimensions[column_cells[0].column_letter].width = length * 1.1  # Magic Number
+        with NamedTemporaryFile(suffix="xlsx") as f:
+            wb.save(f.name)
+            with open(f.name, "rb") as f:
+                return f.read()
+
+    @staticmethod
+    def to_xml(records: List[Model], _fields: List[str], session, context) -> bytes:
+        """Return a ZIP with the XML's of the records"""
+        session.add_all(records)
+        f = io.BytesIO()
+        with ZipFile(f, "w") as zf:
+            for record in records:
+                xml = record.xml(session, context)
+                zf.writestr(f"{record.UUID}.xml", xml)
+        return f.getvalue()
 
     @classmethod
     @add_session
@@ -605,6 +628,7 @@ class CommonController:
         EXPORTERS = {
             ExportFormat.CSV: cls.to_csv,
             ExportFormat.XLSX: cls.to_xlsx,
+            ExportFormat.XML: cls.to_xml,
         }
         exporter = EXPORTERS.get(export_format)
         if not exporter:
