@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 from zipfile import ZipFile
 
 import boto3
+import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
@@ -611,12 +612,18 @@ class CommonController:
     @staticmethod
     def to_xml(records: List[Model], _fields: List[str], session, context) -> bytes:
         """Return a ZIP with the XML's of the records"""
+        if not records:
+            raise NotFoundError("No records found")
         session.add_all(records)
+        controllers_by_model = CommonController.get_controllers_by_model()
+        controller = controllers_by_model[records[0].__class__]
+        urls = controller.get_xml(records, session=session)
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
-            for record in records:
-                xml = record.xml(session, context)
-                zf.writestr(f"{record.UUID}.xml", xml)
+            for row in urls:
+                uuid, url = row["uuid"], row["xml_url"]
+                xml = requests.get(url).content
+                zf.writestr(f"{uuid}.xml", xml)
         return f.getvalue()
 
     @classmethod
