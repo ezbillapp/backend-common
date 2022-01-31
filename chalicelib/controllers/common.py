@@ -4,9 +4,12 @@ import functools
 import io
 import os
 from datetime import date, datetime
+from email import header
+from tempfile import TemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
 import boto3
+import pandas as pd
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
@@ -45,7 +48,8 @@ PrimitiveType = Union[str, int, float, bool, date, datetime]
 class ExportFormat(enum.Enum):
     CSV = "csv"
     PDF = "zip"
-    XLSX = "zip"
+    XLSX = "xlsx"
+    XML = "zip"
 
 
 class unaccent(ReturnTypeFromArgs):  # pylint: disable=too-many-ancestors
@@ -571,6 +575,8 @@ class CommonController:
         def _plain_field(record: Model, field_str: str) -> Any:
             res = record
             for part in field_str.split("."):
+                if not res:
+                    continue
                 res = getattr(res, part)
             return CommonController._to_primitive(res)
 
@@ -582,16 +588,28 @@ class CommonController:
             writer.writerow([_plain_field(record, field) for field in fields])
         return f.getvalue().encode("utf-8")
 
+    @staticmethod
+    def to_xlsx(records: List[Model], fields: List[str], session, context) -> bytes:
+        csv = CommonController.to_csv(records, fields, session, context)
+        with TemporaryFile() as f:
+            pd.read_csv(io.BytesIO(csv)).to_excel(f, index=None, header=True)
+            f.seek(0)
+            return f.read()
+
     @classmethod
     @add_session
     def export(
         cls, records: List[Model], fields: List[str], export_str: str, *, session, context
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
-        if export_format == ExportFormat.CSV:
-            data_bytes = cls.to_csv(records, fields, session, context)
-        else:
+        EXPORTERS = {
+            ExportFormat.CSV: cls.to_csv,
+            ExportFormat.XLSX: cls.to_xlsx,
+        }
+        exporter = EXPORTERS.get(export_format)
+        if not exporter:
             raise NotFoundError(f"Export format {export_format} not implemented")
+        data_bytes = exporter(records, fields, session, context)
         model_name = cls.model.__name__
         now = datetime.now()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
