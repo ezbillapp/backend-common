@@ -38,7 +38,7 @@ def gen_env_vars_dict(stage: str) -> Dict[str, str]:
 def save_env_vars_dict(template_path, config_path, stage, env_vars, subnets, security_groups):
     """Writes all environment variables on build before deployment"""
     with open(template_path, "r") as f:
-        content = json.loads(f.read())
+        content = json.loads(f.read() or "{}")
         content["stages"][stage] = {
             "environment_variables": env_vars,
             "subnet_ids": subnets,
