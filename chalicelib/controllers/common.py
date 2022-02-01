@@ -626,20 +626,22 @@ class CommonController:
                 zf.writestr(f"{uuid}.xml", xml)
         return f.getvalue()
 
-    @staticmethod
-    def to_pdf(records: List[Model], _fields: List[str], session, context) -> bytes:
+    @classmethod
+    def to_pdf(cls, records: List[Model], _fields: List[str], session, context) -> bytes:
         """Return a ZIP with the XML's of the records"""
-        if not records:
-            raise NotFoundError("No records found")
+        # if not records:
+        #     raise NotFoundError("No records found")
         session.add_all(records)
-        controllers_by_model = CommonController.get_controllers_by_model()
-        controller = controllers_by_model[records[0].__class__]
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
             for record in records:
-                pdf = controller._to_pdf(record)  # TODO async
+                pdf = cls._to_pdf(record)  # TODO async
                 zf.writestr(f"{record.UUID}.pdf", pdf)
         return f.getvalue()
+
+    @classmethod
+    def _to_pdf(cls):
+        ...
 
     @classmethod
     @add_session
