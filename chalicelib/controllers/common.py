@@ -2,6 +2,7 @@ import csv
 import enum
 import functools
 import io
+import logging
 import os
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile, TemporaryFile
@@ -33,6 +34,14 @@ from chalicelib.controllers import (
 )
 from chalicelib.schema.models import Company, Model, Permission, User, Workspace
 
+_logger = logging.getLogger(__name__)
+
+handler = logging.StreamHandler()
+_logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+_logger.addHandler(handler)
+
 EXPORT_BUCKET = os.environ.get("S3_EXPORT_BUCKET")
 EXPORT_EXPIRATION = 60 * 60 * 2
 
@@ -48,10 +57,10 @@ PrimitiveType = Union[str, int, float, bool, date, datetime]
 
 
 class ExportFormat(enum.Enum):
-    CSV = "csv"
-    PDF = "zip"
-    XLSX = "xlsx"
-    XML = "zip"
+    CSV = enum.auto()
+    PDF = enum.auto()
+    XLSX = enum.auto()
+    XML = enum.auto()
 
 
 class unaccent(ReturnTypeFromArgs):  # pylint: disable=too-many-ancestors
@@ -632,6 +641,7 @@ class CommonController:
         # if not records:
         #     raise NotFoundError("No records found")
         session.add_all(records)
+        _logger.info("Creating PDF, Records: %s", len(records))
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
             for record in records:
@@ -656,20 +666,29 @@ class CommonController:
             ExportFormat.PDF: cls.to_pdf,
         }
         exporter = EXPORTERS.get(export_format)
+        extension = {
+            "CSV": "csv",
+            "XLSX": "xlsx",
+            "XML": "zip",
+            "PDF": "zip",
+        }[export_str]
         if not exporter:
             raise NotFoundError(f"Export format {export_format} not implemented")
+        _logger.info("Exporting %s records", len(records))
         data_bytes = exporter(records, fields, session, context)
         model_name = cls.model.__name__
         now = datetime.now()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
-        filename = f"{model_name}_{date_str}.{export_format.value}"
+        filename = f"{model_name}_{date_str}.{extension}"
 
         s3_client = boto3.client("s3")
+        _logger.info("Uploading to S3")
         s3_client.upload_fileobj(  # TODO deal with colisions
             io.BytesIO(data_bytes),
             EXPORT_BUCKET,
             filename,
         )
+        _logger.info("Uploaded to S3")
         s3_url = s3_client.generate_presigned_url(
             "get_object",
             Params={
