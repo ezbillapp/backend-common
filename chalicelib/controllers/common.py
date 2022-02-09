@@ -5,7 +5,7 @@ import io
 import logging
 import os
 from datetime import date, datetime
-from tempfile import NamedTemporaryFile, TemporaryFile
+from tempfile import NamedTemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 from zipfile import ZipFile
 
@@ -15,7 +15,6 @@ import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
 from openpyxl import Workbook
-from openpyxl.utils import get_column_letter
 from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
@@ -73,7 +72,7 @@ def _plain_field(record: Model, field_str: str) -> Any:
         if not res:
             continue
         res = getattr(res, part)
-    return CommonController._to_primitive(res)
+    return CommonController._to_primitive(res)  # pylint: disable=protected-access
 
 
 def check_context(f):
@@ -158,7 +157,7 @@ class CommonController:
             order_by = cls._order_by
         elif "name" in cls.model.__table__.c:
             order_by = "name"
-        return order_by + ", id" if order_by else "id"
+        return f"{order_by}, id" if order_by else "id"
 
     @staticmethod
     def _normalize_order_by(model: Type[Model], order_by: str) -> str:
@@ -619,6 +618,10 @@ class CommonController:
                 return f.read()
 
     @staticmethod
+    def get_xml(records: List[Model], *, session) -> List[Dict[str, str]]:
+        ...
+
+    @staticmethod
     def to_xml(records: List[Model], _fields: List[str], session, context) -> bytes:
         """Return a ZIP with the XML's of the records"""
         if not records:
@@ -649,8 +652,8 @@ class CommonController:
                 zf.writestr(f"{record.UUID}.pdf", pdf)
         return f.getvalue()
 
-    @classmethod
-    def _to_pdf(cls):
+    @staticmethod
+    def _to_pdf(record: Model) -> bytes:
         ...
 
     @classmethod
