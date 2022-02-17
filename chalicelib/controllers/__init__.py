@@ -1,18 +1,21 @@
 import functools
+import logging
 import operator
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ForbiddenError
+from chalicelib.schema import engine
+from chalicelib.schema.models.model import Model
 from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from chalicelib.schema import engine
-from chalicelib.schema.models.model import Model
-
 Domain = List[Tuple[str, str, Any]]
 SearchResult = List[Dict[str, Any]]
 SearchResultPaged = Tuple[SearchResult, bool, int]
+
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.DEBUG)
 
 
 operators = {
@@ -162,6 +165,7 @@ def add_session(f):
         res = f(*args, **kwargs)
         if new_session:
             try:
+                _logger.debug("Session Commit")
                 new_session.commit()
             except IntegrityError as exception:
                 raise BadRequestError("Internal exception in the DB") from exception
