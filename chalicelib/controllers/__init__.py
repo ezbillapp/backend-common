@@ -1,22 +1,21 @@
 import functools
 import logging
 import operator
+import os
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ForbiddenError
-from chalicelib.schema import engine
-from chalicelib.schema.models.model import Model
 from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from chalicelib import _logger
+from chalicelib.schema import engine
+from chalicelib.schema.models.model import Model
+
 Domain = List[Tuple[str, str, Any]]
 SearchResult = List[Dict[str, Any]]
 SearchResultPaged = Tuple[SearchResult, bool, int]
-
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
-
 
 operators = {
     "<": operator.lt,
@@ -70,7 +69,7 @@ def is_m2o(column):
     return hasattr(column.property, "mapper") and not getattr(column.property, "uselist")
 
 
-def is_x2m(model: Type[Model], field: str) -> bool:
+def is_x2m(model: Type[Model], field: str) -> Any:
     rel = model._sa_class_manager.get(field)  # pylint: disable=protected-access
     return rel and getattr(rel.property, "uselist", None) and rel
 

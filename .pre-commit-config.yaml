@@ -33,7 +33,7 @@ repos:
     rev: v3.0.0a4
     hooks:
       - id: pylint
-        entry: bash -c 'cd chalicelib && pylint .'
+        entry: /home/moy/.cache/pypoetry/virtualenvs/solucioncp-backend-g51mD_Fp-py3.9/bin/pylint
         verbose: true
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.29.1

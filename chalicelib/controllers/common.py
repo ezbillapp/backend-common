@@ -19,6 +19,7 @@ from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
+from chalicelib import _logger
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -32,14 +33,6 @@ from chalicelib.controllers import (
     is_x2m,
 )
 from chalicelib.schema.models import Company, Model, Permission, User, Workspace
-
-_logger = logging.getLogger(__name__)
-
-handler = logging.StreamHandler()
-_logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-_logger.addHandler(handler)
 
 EXPORT_BUCKET = os.environ.get("S3_EXPORT_BUCKET")
 EXPORT_EXPIRATION = 60 * 60 * 2
@@ -551,7 +544,7 @@ class CommonController:
             for key, value in data.items():
                 if m2m_rel := is_x2m(record, key):
                     field = getattr(record, key)
-                    cls._set_m2m(m2m_rel.property.entity, field, value, session=session)  # type: ignore
+                    cls._set_m2m(m2m_rel.property.entity, field, value, session=session)
                     continue
                 setattr(record, key, value)
             cls._onchange_fields(list(data.keys()), record, session=session, context=context)

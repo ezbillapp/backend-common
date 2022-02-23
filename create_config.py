@@ -5,10 +5,11 @@ from typing import Dict
 
 import boto3
 
+from chalicelib import _logger
+
 CHALICE_CONGIFIG_TEMPLATE_FILE = ".chalice/template.config.json"
 CHALICE_CONGIFIG_FILE = ".chalice/config.json"
 
-_logger = logging.getLogger(__name__)
 
 from config import ENV_VARS, PROJECT_NAME, REGION_NAME
 
