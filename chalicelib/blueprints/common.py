@@ -1,4 +1,12 @@
+import cProfile
+import functools
+import pstats
+from datetime import datetime
+
 from chalice import CORSConfig
+from memory_profiler import (  # type: ignore # pylint: disable=unused-import
+    profile as memory_profile,
+)
 
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
@@ -124,3 +132,17 @@ def resume(bp, controller: CommonController):
     user = UserController.get_by_token(token)
     context = {"user": user}
     return controller.resume(domain, fuzzy_search, context=context)
+
+
+def performance_profile(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        with cProfile.Profile() as pr:
+            result = f(*args, **kwargs)
+        stats = pstats.Stats(pr)
+        stats.sort_stats(pstats.SortKey.TIME)
+        now = datetime.now().isoformat()
+        stats.dump_stats(f"/tmp/{f.__name__}-{now}-.prof")
+        return result
+
+    return wrapper
