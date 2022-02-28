@@ -9,7 +9,9 @@ from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from chalicelib import _logger
+import logging
+
+_logger = logging.getLogger(__name__)
 from chalicelib.schema import engine
 from chalicelib.schema.models.model import Model
 

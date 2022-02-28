@@ -5,7 +5,7 @@ from typing import Dict
 
 import boto3
 
-from chalicelib import _logger
+_logger = logging.getLogger(__name__)
 
 CHALICE_CONGIFIG_TEMPLATE_FILE = ".chalice/template.config.json"
 CHALICE_CONGIFIG_FILE = ".chalice/config.json"

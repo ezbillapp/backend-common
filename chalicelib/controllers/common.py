@@ -19,7 +19,9 @@ from sqlalchemy import or_, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
-from chalicelib import _logger
+import logging
+
+_logger = logging.getLogger(__name__)
 from chalicelib.controllers import (
     Domain,
     SearchResult,
