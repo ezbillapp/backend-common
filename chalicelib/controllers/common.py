@@ -114,7 +114,7 @@ class CommonController:
     @classmethod
     def get_controllers_by_model(cls) -> Dict[Type[Model], Type["CommonController"]]:
         controllers = CommonController.__subclasses__()
-        return {getattr(controller, "model", ""): controller for controller in controllers}
+        return {getattr(controller, "model"): controller for controller in controllers}
 
     @classmethod
     @add_session
@@ -607,8 +607,8 @@ class CommonController:
             ws.column_dimensions[column_cells[0].column_letter].width = length * 1.1  # Magic Number
         with NamedTemporaryFile(suffix="xlsx") as f:
             wb.save(f.name)
-            with open(f.name, "rb") as f:
-                return f.read()
+            with open(f.name, "rb") as f2:
+                return f2.read()
 
     @staticmethod
     def get_xml(records: List[Model], *, session) -> List[Dict[str, str]]:
