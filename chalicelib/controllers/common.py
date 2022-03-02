@@ -161,6 +161,20 @@ class CommonController:
         return ", ".join(new_attrs)
 
     @classmethod
+    def apply_domain(cls, query, domain: List[Tuple[str, str, Any]]):
+        domain_doted = []
+        domain_no_doted = []
+        for t in domain:
+            if t[0].find(".") != -1:
+                domain_doted.append(t)
+            else:
+                domain_no_doted.append(t)
+        query = filter_query_doted(cls.model, query, domain_doted)
+
+        domain_parsed = filter_query(cls.model, domain_no_doted)
+        query.filter(*domain_parsed)
+
+    @classmethod
     @add_session
     def _search(
         cls,
@@ -180,17 +194,7 @@ class CommonController:
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
 
-        domain_doted = []
-        domain_no_doted = []
-        for t in domain:
-            if t[0].find(".") != -1:
-                domain_doted.append(t)
-            else:
-                domain_no_doted.append(t)
-        query = filter_query_doted(cls.model, query, domain_doted)
-
-        domain_parsed = filter_query(cls.model, domain_no_doted)
-        query = query.filter(*domain_parsed)
+        cls.apply_domain(query, domain)
         if "active" in cls.model.__table__.c:
             query = query.filter(cls.model.active == active)
         if need_count:
