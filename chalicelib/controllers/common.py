@@ -172,7 +172,8 @@ class CommonController:
         query = filter_query_doted(cls.model, query, domain_doted)
 
         domain_parsed = filter_query(cls.model, domain_no_doted)
-        query.filter(*domain_parsed)
+        query = query.filter(*domain_parsed)
+        return query
 
     @classmethod
     @add_session
@@ -194,7 +195,7 @@ class CommonController:
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
 
-        cls.apply_domain(query, domain)
+        query = cls.apply_domain(query, domain)
         if "active" in cls.model.__table__.c:
             query = query.filter(cls.model.active == active)
         if need_count:
