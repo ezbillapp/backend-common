@@ -1,12 +1,45 @@
+
 exclude: versions.*|env.py|chalicelib/common
 default_language_version:
   python: python39
 repos:
-  - repo: https://github.com/psf/black
-    rev: 21.12b0
+  - repo: local
     hooks:
       - id: black
-        args: ["-l 100"]
+        name: black
+        entry: poetry run black .
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: pylint
+        name: pylint
+        entry: poetry run pylint -j 0 src tests
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: isort
+        name: isort
+        entry: poetry run isort -j 5 .
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy .
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: export-requirements
+        name: Export requeriments.txt
+        language: system
+        entry: poetry export --without-hashes -o requirements.txt
+        pass_filenames: false
+        files: ^(pyproject.toml|poetry.lock)$
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.1.0
     hooks:
@@ -29,28 +62,12 @@ repos:
       - id: check-xml
       - id: mixed-line-ending
         args: ["--fix=lf"]
-  - repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v3.0.0a4
-    hooks:
-      - id: pylint
-        entry: /home/moy/.cache/pypoetry/virtualenvs/solucioncp-backend-g51mD_Fp-py3.9/bin/pylint
-        verbose: true
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.29.1
     hooks:
       - id: pyupgrade
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.9.3
-    hooks:
-      - id: isort
-        args: ["--profile=black"]
   - repo: https://github.com/hadialqattan/pycln
     rev: v1.1.0 # Possible releases: https://github.com/hadialqattan/pycln/tags
     hooks:
       - id: pycln
         args: [-a]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.931
-    hooks:
-    - id: mypy
-      additional_dependencies: [types-requests]
