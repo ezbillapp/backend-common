@@ -209,3 +209,13 @@ def remove_super_user(context: Dict[str, Any] = None):
         context = {}
     context.pop("super_user", None)
     return context
+
+
+def disable_if_dev(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        DEV_MODE = bool(os.environ.get("DEV_MODE", False))
+        if not DEV_MODE:
+            return f(*args, **kwargs)
+
+    return wrapper
