@@ -553,7 +553,7 @@ class CommonController:
                     continue
                 setattr(record, key, value)
             cls._onchange_fields(list(data.keys()), record, session=session, context=context)
-            record.updated_at = datetime.now()
+            record.updated_at = datetime.utcnow()
         return records
 
     @classmethod
@@ -678,7 +678,7 @@ class CommonController:
         _logger.info("Exporting %s records", len(records))
         data_bytes = exporter(records, fields, session, context)
         model_name = cls.model.__name__
-        now = datetime.now()
+        now = datetime.utcnow()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
         filename = f"{model_name}_{date_str}.{extension}"
 
