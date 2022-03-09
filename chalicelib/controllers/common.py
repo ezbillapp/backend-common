@@ -125,6 +125,8 @@ class CommonController:
     @add_session
     def _fuzzy_search(cls, query, fuzzy_search, *, session=None):
         # REATE EXTENSION unaccent;
+        if not fuzzy_search:
+            return query
         fuzzy_search = unidecode.unidecode(fuzzy_search)
         fuzzy_filter = tuple(
             unaccent(field).ilike(f"%{fuzzy_search}%") for field in cls.fuzzy_fields
