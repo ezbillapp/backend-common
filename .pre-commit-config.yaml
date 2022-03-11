@@ -7,9 +7,8 @@ repos:
     hooks:
       - id: black
         name: black
-        entry: poetry run black --exclude "versions.*" .
+        entry: poetry run black --exclude "versions.*"
         language: system
-        pass_filenames: false
         types: [python]
 
       - id: pylint
@@ -21,16 +20,14 @@ repos:
 
       - id: isort
         name: isort
-        entry: poetry run isort -j 5 -s chalicelib/alembic/versions/ .
+        entry: poetry run isort -j 5 -s chalicelib/alembic/versions/
         language: system
-        pass_filenames: false
         types: [python]
 
       - id: mypy
         name: mypy
-        entry: poetry run mypy .
+        entry: poetry run mypy
         language: system
-        pass_filenames: false
         types: [python]
 
       - id: export-requirements
