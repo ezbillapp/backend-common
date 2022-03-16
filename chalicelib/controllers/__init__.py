@@ -13,6 +13,8 @@ _logger = logging.getLogger(__name__)
 from chalicelib.schema import engine
 from chalicelib.schema.models.model import Model
 
+DECIMAL_PLACES = 6
+
 Domain = List[Tuple[str, str, Any]]
 SearchResult = List[Dict[str, Any]]
 SearchResultPaged = Tuple[SearchResult, bool, int]
@@ -209,6 +211,10 @@ def remove_super_user(context: Dict[str, Any] = None):
         context = {}
     context.pop("super_user", None)
     return context
+
+
+def _round(value: float) -> float:
+    return round(value, DECIMAL_PLACES)
 
 
 def disable_if_dev(f):
