@@ -22,10 +22,11 @@ class Model(Base):
     )
     created_at = Column(
         DateTime,
-        default=datetime.now,
+        default=datetime.utcnow,
     )
     updated_at = Column(
         DateTime,
+        onupdate=datetime.utcnow,
     )
 
 
