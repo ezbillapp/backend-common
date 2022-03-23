@@ -555,7 +555,6 @@ class CommonController:
                     continue
                 setattr(record, key, value)
             cls._onchange_fields(list(data.keys()), record, session=session, context=context)
-            record.updated_at = datetime.utcnow()
         return records
 
     @classmethod
