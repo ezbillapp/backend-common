@@ -152,7 +152,7 @@ class CommonController:
             order_by = cls._order_by
         elif "name" in cls.model.__table__.c:
             order_by = "name"
-        return f"{order_by}, id" if order_by else "id"
+        return f"id, {order_by}" if order_by else "id"
 
     @staticmethod
     def _normalize_order_by(model: Type[Model], order_by: str) -> str:
