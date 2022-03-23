@@ -111,7 +111,6 @@ def filter_query(model, raw_filters):
 def filter_query_doted(model, query, domain: Domain):
     join_models = {}
     filters = []
-    query = query.distinct(model.id)
     for raw in domain:
         key, op, value = raw
         tokens = key.split(".")

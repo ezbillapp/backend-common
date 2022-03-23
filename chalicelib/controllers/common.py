@@ -196,7 +196,7 @@ class CommonController:
         query = session.query(cls.model).select_from(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
-
+        query = query.distinct(cls.model.id)
         query = cls.apply_domain(query, domain)
         if "active" in cls.model.__table__.c:
             query = query.filter(cls.model.active == active)
