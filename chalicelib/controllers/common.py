@@ -196,14 +196,14 @@ class CommonController:
         query = session.query(cls.model).select_from(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
-        query = query.distinct(cls.model.id)
         query = cls.apply_domain(query, domain)
         if "active" in cls.model.__table__.c:
             query = query.filter(cls.model.active == active)
-        if need_count:
-            count = query.count()
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
+            query = query.distinct(cls.model.id)
+        if need_count:
+            count = query.count()
         order_by = cls._normalize_order_by(cls.model, order_by)
         query = query.order_by(text(order_by))
         query = query.limit(limit + 1) if limit else query
