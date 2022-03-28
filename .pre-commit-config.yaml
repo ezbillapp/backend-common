@@ -15,7 +15,6 @@ repos:
         name: pylint
         entry: poetry run pylint -j 0 src tests
         language: system
-        pass_filenames: false
         types: [python]
 
       - id: isort
