@@ -191,6 +191,7 @@ class CommonController:
         need_count: bool = False,
         session=None,
         context=None,
+        lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
 
         query = session.query(cls.model).select_from(cls.model)
@@ -208,6 +209,8 @@ class CommonController:
         query = query.order_by(text(order_by))
         query = query.limit(limit + 1) if limit else query
         query = query.offset(limit * offset if (limit and offset) else 0)
+        if lazzy:
+            return query
         records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
         if need_count:
@@ -590,8 +593,6 @@ class CommonController:
 
     @staticmethod
     def to_csv(records: List[Model], fields: List[str], session, context) -> bytes:
-
-        session.add_all(records)
         f = io.StringIO()
         writer = csv.writer(f)
         writer.writerow(fields)
@@ -601,7 +602,6 @@ class CommonController:
 
     @staticmethod
     def to_xlsx(records: List[Model], fields: List[str], session, context) -> bytes:
-        session.add_all(records)
         wb = Workbook()
         ws = wb.active
         ws.append(fields)
@@ -658,7 +658,7 @@ class CommonController:
     @classmethod
     @add_session
     def export(
-        cls, records: List[Model], fields: List[str], export_str: str, *, session, context
+        cls, query: List[Model], fields: List[str], export_str: str, *, session, context
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         EXPORTERS = {
@@ -676,8 +676,8 @@ class CommonController:
         }[export_str]
         if not exporter:
             raise NotFoundError(f"Export format {export_format} not implemented")
-        _logger.info("Exporting %s records", len(records))
-        data_bytes = exporter(records, fields, session, context)
+        _logger.info("Exporting records")
+        data_bytes = exporter(query, fields, session, context)
         model_name = cls.model.__name__
         now = datetime.utcnow()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
