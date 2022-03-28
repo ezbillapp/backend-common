@@ -642,7 +642,6 @@ class CommonController:
         """Return a ZIP with the XML's of the records"""
         # if not records:
         #     raise NotFoundError("No records found")
-        session.add_all(records)
         _logger.info("Creating PDF, Records: %s", len(records))
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
