@@ -32,7 +32,7 @@ repos:
       - id: export-requirements
         name: Export requeriments.txt
         language: system
-        entry: poetry export --without-hashes --dev -o requirements.txt
+        entry: poetry export --without-hashes -o requirements.txt
         pass_filenames: false
         files: ^(pyproject.toml|poetry.lock)$
 
