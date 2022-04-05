@@ -40,17 +40,20 @@ def save_env_vars_dict(template_path, config_path, stage, env_vars, subnets, sec
     """Writes all environment variables on build before deployment"""
     with open(template_path, "r") as f:
         content = json.loads(f.read() or "{}")
-        content["stages"][stage] = {
-            "environment_variables": env_vars,
-            "subnet_ids": subnets,
-            "security_group_ids": security_groups,
-        }
+        if "stages" not in content:
+            content["stages"] = {}
+        if stage not in content["stages"]:
+            content["stages"][stage] = {}
+        content["stages"][stage]["environment_variables"] = env_vars
+        content["stages"][stage]["subnet_ids"] = subnets
+        content["stages"][stage]["security_group_ids"] = security_groups
         json.dump(content, open(config_path, "w"))
 
 
 def main():
     """Writes all environment variables on build before deployment"""
-    stage = str(sys.argv[1])
+    # stage = str(sys.argv[1])
+    stage = "dev"
 
     env_vars = gen_env_vars_dict(stage)
     subnets = [env_vars.pop(env_var) for env_var in ["SUBNET_1", "SUBNET_2", "SUBNET_3"]]
