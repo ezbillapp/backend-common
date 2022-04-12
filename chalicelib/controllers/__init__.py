@@ -4,7 +4,7 @@ import operator
 import os
 from typing import Any, Dict, List, Set, Tuple, Type
 
-from chalice import BadRequestError, ForbiddenError
+from chalice import BadRequestError, ChaliceViewError, ForbiddenError
 from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -225,3 +225,7 @@ def disable_if_dev(f):
             return f(*args, **kwargs)
 
     return wrapper
+
+
+class ServiceUnavailableError(ChaliceViewError):
+    STATUS_CODE = 503
