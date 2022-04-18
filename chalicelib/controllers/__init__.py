@@ -2,6 +2,7 @@ import functools
 import logging
 import operator
 import os
+from contextlib import contextmanager
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ChaliceViewError, ForbiddenError
@@ -153,6 +154,14 @@ def ensure_set(f):
         return f(cls, ids, *args, **kwargs)
 
     return wrapper
+
+
+@contextmanager
+def test_session():
+    session = Session(bind=engine)
+    yield session
+    session.rollback()
+    session.close()
 
 
 def add_session(f):
