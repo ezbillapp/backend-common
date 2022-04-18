@@ -52,8 +52,7 @@ def save_env_vars_dict(template_path, config_path, stage, env_vars, subnets, sec
 
 def main():
     """Writes all environment variables on build before deployment"""
-    # stage = str(sys.argv[1])
-    stage = "dev"
+    stage = str(sys.argv[1])
 
     env_vars = gen_env_vars_dict(stage)
     subnets = [env_vars.pop(env_var) for env_var in ["SUBNET_1", "SUBNET_2", "SUBNET_3"]]
