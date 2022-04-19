@@ -208,7 +208,7 @@ def ensure_super_user(context: Dict[str, Any], message="do this"):
         raise ForbiddenError(f"Only super users can {message}")
 
 
-def scale_to_super_user(context: Dict[str, Any] = None):
+def scale_to_super_user(context: Dict[str, Any] = None) -> Dict[str, Any]:
     if context is None:
         context = {}
     context["super_user"] = True
