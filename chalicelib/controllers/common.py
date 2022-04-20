@@ -640,9 +640,9 @@ class CommonController:
     @classmethod
     def to_pdf(cls, records: List[Model], _fields: List[str], session, context) -> bytes:
         """Return a ZIP with the XML's of the records"""
-        # if not records:
-        #     raise NotFoundError("No records found")
-        # _logger.info("Creating PDF, Records: %s", len(records))
+        if not records:
+            raise NotFoundError("No records found")
+        _logger.info("Creating PDF, Records: %s", len(records))
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
             for record in records:
