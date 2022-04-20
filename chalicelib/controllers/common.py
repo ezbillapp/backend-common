@@ -14,6 +14,11 @@ import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
+
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -26,11 +31,13 @@ from chalicelib.controllers import (
     is_super_user,
     is_x2m,
 )
-from chalicelib.schema.models import Company, Model, Permission, User, Workspace
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
+from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
+    Company,
+    Model,
+    Permission,
+    User,
+    Workspace,
+)
 
 _logger = logging.getLogger(__name__)
 
