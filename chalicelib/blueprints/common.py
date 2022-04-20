@@ -1,5 +1,4 @@
-from chalice import CORSConfig
-
+from chalice import CORSConfig, UnauthorizedError
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
@@ -45,7 +44,7 @@ def export(bp, controller: CommonController):
     elif temporal_token:
         context = {"guest_partner": True}
     else:
-        raise Exception("No token provided")
+        raise UnauthorizedError("No token provided")
 
     query = controller._search(  # pylint: disable=protected-access
         **search_attrs, context=context, lazzy=True
@@ -68,7 +67,7 @@ def search(bp, controller: CommonController):
     elif temporal_token:
         context = {"guest_partner": True}
     else:
-        raise Exception("No token provided")
+        raise UnauthorizedError("No token provided")
 
     pos, next_page, total_records = controller.search(**search_attrs, context=context)
     dict_repr = controller.detail(pos, fields, context=context)

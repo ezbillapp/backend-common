@@ -14,12 +14,6 @@ import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
-
-_logger = logging.getLogger(__name__)
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -33,6 +27,12 @@ from chalicelib.controllers import (
     is_x2m,
 )
 from chalicelib.schema.models import Company, Model, Permission, User, Workspace
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
+
+_logger = logging.getLogger(__name__)
 
 EXPORT_BUCKET = os.environ.get("S3_EXPORT_BUCKET")
 EXPORT_EXPIRATION = 60 * 60 * 2
@@ -307,9 +307,7 @@ class CommonController:
     @staticmethod
     def _to_primitive(data) -> PrimitiveType:
         def get_class(field):
-            if issubclass(field.__class__, enum.Enum):
-                return enum.Enum
-            return field.__class__
+            return enum.Enum if issubclass(field.__class__, enum.Enum) else field.__class__
 
         value_class = get_class(data)
 
@@ -425,8 +423,8 @@ class CommonController:
             session.query(cls.model).filter(cls.model.id.in_(ids)).order_by(cls.model.id).all()
         )
         if len(ids) != len(records):
-            ids_readed = {record.id for record in records}
-            diff = ids - ids_readed
+            ids_read = {record.id for record in records}
+            diff = ids - ids_read
             raise NotFoundError(f"ID's: {diff} were not found in model {cls.model.__name__}")
         cls.ensure_role_access(records, session=session, context=context)
         return records[0] if len(ids) == 1 and singleton else records
@@ -482,7 +480,7 @@ class CommonController:
         cls, model, field, records: Union[Model, List[Model]], *, session=None
     ):
         field.clear()
-        records = [records] if not isinstance(records, list) else records
+        records = records if isinstance(records, list) else [records]
         field.extend(records)
 
     @classmethod
@@ -493,11 +491,11 @@ class CommonController:
         """Update an m2m field based on the next structure:
         (0, None): NotImplemented
         (1, id): NotImplemented
-        (2, id): Revemove but NOT delete from the DB
+        (2, id): Remove but NOT delete from the DB
         (3, id): Remove and delete from the DB
         (4, id): Add in relation
         (5, None): Remove all ids from the relation
-        (6, ids): Replace all current ids with the providen ids
+        (6, ids): Replace all current ids with the provided ids
 
         Args:
             field ([type]): [description]
@@ -684,7 +682,7 @@ class CommonController:
 
         s3_client = boto3.client("s3")
         _logger.info("Uploading to S3")
-        s3_client.upload_fileobj(  # TODO deal with colisions
+        s3_client.upload_fileobj(  # TODO deal with collisions
             io.BytesIO(data_bytes),
             EXPORT_BUCKET,
             filename,

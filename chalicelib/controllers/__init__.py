@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 _logger = logging.getLogger(__name__)
-from chalicelib.schema import engine
+from chalicelib.schema import engine  # pylint: disable=no-name-in-module
 from chalicelib.schema.models.model import Model
 
 DECIMAL_PLACES = 6
@@ -84,7 +84,7 @@ def _get_filter_m2o(column, op, value):
         return column.has()
     if op == "!=":
         return ~column.has()
-    raise BadRequestError("Only the opertators '=' and '!=' are accepted in relations")
+    raise BadRequestError("Only the operators '=' and '!=' are accepted in relations")
 
 
 def get_filter(model, raw):
@@ -115,9 +115,9 @@ def filter_query_doted(model, query, domain: Domain):
     for raw in domain:
         key, op, value = raw
         tokens = key.split(".")
-        rels, field = tokens[:-1], tokens[-1]
+        relations, field = tokens[:-1], tokens[-1]
         current_model = prev_model = model
-        for rel in rels:
+        for rel in relations:
             attrib = getattr(current_model, rel)
             tmp_model = current_model
             current_model = get_model_from_relationship(attrib)
