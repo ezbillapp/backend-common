@@ -6,11 +6,12 @@ from contextlib import contextmanager
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ChaliceViewError, ForbiddenError
-from chalicelib.schema import engine  # pylint: disable=no-name-in-module
-from chalicelib.schema.models.model import Model
 from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+from chalicelib.schema import engine  # pylint: disable=no-name-in-module
+from chalicelib.schema.models.model import Model
 
 _logger = logging.getLogger(__name__)
 
