@@ -30,6 +30,7 @@ from chalicelib.controllers import (
     filter_query_doted,
     is_super_user,
     is_x2m,
+    utc_now,
 )
 from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     Company,
@@ -683,7 +684,7 @@ class CommonController:
         _logger.info("Exporting records")
         data_bytes = exporter(query, fields, session, context)
         model_name = cls.model.__name__
-        now = datetime.utcnow()
+        now = utc_now()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")
         filename = f"{model_name}_{date_str}.{extension}"
 

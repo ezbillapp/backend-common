@@ -3,6 +3,7 @@ import logging
 import operator
 import os
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ChaliceViewError, ForbiddenError
@@ -239,3 +240,7 @@ def disable_if_dev(f):
 
 class ServiceUnavailableError(ChaliceViewError):
     STATUS_CODE = 503
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
