@@ -183,14 +183,15 @@ def add_session(f):
                 kwargs,
             )  # TODO revert to `debug`
             kwargs["session"] = new_session
-        res = f(*args, **kwargs)
-        if new_session:
-            try:
+        try:
+            res = f(*args, **kwargs)
+            if new_session:
                 _logger.debug("Session Commit")
                 new_session.commit()
-            except IntegrityError as exception:
-                raise BadRequestError("Internal exception in the DB") from exception
-            finally:
+        except IntegrityError as exception:
+            raise BadRequestError("Internal exception in the DB") from exception
+        finally:
+            if new_session:
                 new_session.close()
                 _logger.error("Session %s closed", new_session)  # TODO revert to `debug`
         return res
