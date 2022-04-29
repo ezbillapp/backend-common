@@ -172,7 +172,7 @@ def add_session(f):
         session = kwargs.get("session")
         new_session = None
         if session:
-            _logger.debug("Session already provided: %s", session)  # TODO revert to `debug`
+            _logger.debug("Session already provided: %s", session)
         else:
             new_session = Session(engine)
             _logger.debug(
@@ -181,7 +181,7 @@ def add_session(f):
                 f,
                 args,
                 kwargs,
-            )  # TODO revert to `debug`
+            )
             kwargs["session"] = new_session
         try:
             res = f(*args, **kwargs)
@@ -198,7 +198,7 @@ def add_session(f):
         finally:
             if new_session:
                 new_session.close()
-                _logger.error("Session %s closed", new_session)  # TODO revert to `debug`
+                _logger.debug("Session %s closed", new_session)
         return res
 
     return wrapper
