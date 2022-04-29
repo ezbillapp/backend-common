@@ -171,8 +171,11 @@ def add_session(f):
     def wrapper(*args, **kwargs):
         session = kwargs.get("session")
         new_session = None
-        if not session:
+        if session:
+            _logger.error("Session already provided: %s", session)  # TODO revert to `debug`
+        else:
             new_session = Session(engine)
+            _logger.error("Generating new session %s", new_session)  # TODO revert to `debug`
             kwargs["session"] = new_session
         res = f(*args, **kwargs)
         if new_session:
@@ -183,6 +186,7 @@ def add_session(f):
                 raise BadRequestError("Internal exception in the DB") from exception
             finally:
                 new_session.close()
+                _logger.error("Session %s closed", new_session)  # TODO revert to `debug`
         return res
 
     return wrapper
