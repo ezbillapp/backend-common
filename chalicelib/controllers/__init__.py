@@ -172,10 +172,10 @@ def add_session(f):
         session = kwargs.get("session")
         new_session = None
         if session:
-            _logger.error("Session already provided: %s", session)  # TODO revert to `debug`
+            _logger.debug("Session already provided: %s", session)  # TODO revert to `debug`
         else:
             new_session = Session(engine)
-            _logger.error(
+            _logger.debug(
                 "Generating new session: %s, for function: %s, args=%s, kwargs=%s",
                 new_session,
                 f,
@@ -189,7 +189,12 @@ def add_session(f):
                 _logger.debug("Session Commit")
                 new_session.commit()
         except IntegrityError as exception:
-            raise BadRequestError("Internal exception in the DB") from exception
+            _logger.error("IntegrityError: %s", exception)  # TODO revert to `debug`
+            _logger.error(
+                "function=%s, args=%s, kwargs=%s", f, args, kwargs
+            )  # TODO revert to `debug`
+            new_session.rollback()
+            raise BadRequestError(f"Internal exception in the DB: {exception}") from exception
         finally:
             if new_session:
                 new_session.close()
