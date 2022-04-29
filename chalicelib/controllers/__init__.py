@@ -176,7 +176,11 @@ def add_session(f):
         else:
             new_session = Session(engine)
             _logger.error(
-                "Generating new session: %s, for function: %s", new_session, f
+                "Generating new session: %s, for function: %s, args=%s, kwargs=%s",
+                new_session,
+                f,
+                args,
+                kwargs,
             )  # TODO revert to `debug`
             kwargs["session"] = new_session
         res = f(*args, **kwargs)
