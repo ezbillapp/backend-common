@@ -175,7 +175,9 @@ def add_session(f):
             _logger.error("Session already provided: %s", session)  # TODO revert to `debug`
         else:
             new_session = Session(engine)
-            _logger.error("Generating new session %s", new_session)  # TODO revert to `debug`
+            _logger.error(
+                "Generating new session: %s, for function: %s", new_session, f
+            )  # TODO revert to `debug`
             kwargs["session"] = new_session
         res = f(*args, **kwargs)
         if new_session:
