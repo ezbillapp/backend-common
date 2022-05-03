@@ -64,7 +64,7 @@ class ExportFormat(enum.Enum):
 
 
 class unaccent(ReturnTypeFromArgs):  # pylint: disable=too-many-ancestors
-    pass
+    inherit_cache = True
 
 
 def _plain_field(record: Model, field_str: str) -> Any:
