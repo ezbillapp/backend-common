@@ -16,7 +16,7 @@ from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
 from openpyxl import Workbook  # type: ignore
 from sqlalchemy import or_, text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Query, relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 from chalicelib.controllers import (
@@ -598,20 +598,20 @@ class CommonController:
         return session.query(Workspace).filter(Workspace.owner_id == user.id).all()
 
     @staticmethod
-    def to_csv(records: List[Model], fields: List[str], session, context) -> bytes:
+    def to_csv(query: Query, fields: List[str], session, context) -> bytes:
         f = io.StringIO()
         writer = csv.writer(f)
         writer.writerow(fields)
-        for record in records:
+        for record in query:
             writer.writerow([_plain_field(record, field) for field in fields])
         return f.getvalue().encode("utf-8")
 
     @staticmethod
-    def to_xlsx(records: List[Model], fields: List[str], session, context) -> bytes:
+    def to_xlsx(query: Query, fields: List[str], session, context) -> bytes:
         wb = Workbook()
         ws = wb.active
         ws.append(fields)
-        for record in records:
+        for record in query:
             data = [_plain_field(record, field) for field in fields]
             ws.append(data)
         for column_cells in ws.columns:
@@ -627,14 +627,11 @@ class CommonController:
         ...
 
     @staticmethod
-    def to_xml(records: List[Model], _fields: List[str], session, context) -> bytes:
+    def to_xml(query: Query, _fields: List[str], session, context) -> bytes:
         """Return a ZIP with the XML's of the records"""
-        if not records:
-            raise NotFoundError("No records found")
-        session.add_all(records)
         controllers_by_model = CommonController.get_controllers_by_model()
-        controller = controllers_by_model[records[0].__class__]
-        urls = controller.get_xml(records, session=session)
+        controller = controllers_by_model[query[0].__class__]
+        urls = controller.get_xml(query.all(), session=session)
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
             for row in urls:
@@ -644,14 +641,11 @@ class CommonController:
         return f.getvalue()
 
     @classmethod
-    def to_pdf(cls, records: List[Model], _fields: List[str], session, context) -> bytes:
+    def to_pdf(cls, query: Query, _fields: List[str], session, context) -> bytes:
         """Return a ZIP with the XML's of the records"""
-        if not records:
-            raise NotFoundError("No records found")
-        _logger.info("Creating PDF, Records: %s", len(records))
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
-            for record in records:
+            for record in query:
                 pdf = cls._to_pdf(record)  # TODO async
                 zf.writestr(f"{record.UUID}.pdf", pdf)
         return f.getvalue()
@@ -663,7 +657,7 @@ class CommonController:
     @classmethod
     @add_session
     def export(
-        cls, query: List[Model], fields: List[str], export_str: str, *, session, context
+        cls, query: Query, fields: List[str], export_str: str, *, session, context
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         EXPORTERS = {
@@ -682,6 +676,8 @@ class CommonController:
         if not exporter:
             raise NotFoundError(f"Export format {export_format} not implemented")
         _logger.info("Exporting records")
+        if not query.count():
+            raise NotFoundError("No records found")
         data_bytes = exporter(query, fields, session, context)
         model_name = cls.model.__name__
         now = utc_now()
