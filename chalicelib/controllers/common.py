@@ -623,7 +623,7 @@ class CommonController:
                 return f2.read()
 
     @staticmethod
-    def get_xml(records: List[Model], *, session) -> List[Dict[str, str]]:
+    def get_xml(records: List[Model]) -> List[Dict[str, str]]:
         ...
 
     @staticmethod
@@ -631,7 +631,7 @@ class CommonController:
         """Return a ZIP with the XML's of the records"""
         controllers_by_model = CommonController.get_controllers_by_model()
         controller = controllers_by_model[query[0].__class__]
-        urls = controller.get_xml(query.all(), session=session)
+        urls = controller.get_xml(query.all())
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
             for row in urls:
