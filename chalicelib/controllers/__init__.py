@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ChaliceViewError, ForbiddenError
 from sqlalchemy import Float, Integer, Numeric
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import Session
 
 from chalicelib.schema import engine  # pylint: disable=no-name-in-module
@@ -188,7 +188,7 @@ def add_session(f):
             if new_session:
                 _logger.debug("Session Commit")
                 new_session.commit()
-        except IntegrityError as exception:
+        except DatabaseError as exception:
             _logger.exception("IntegrityError")
             new_session.rollback()
             raise BadRequestError(f"Internal exception in the DB: {exception}") from exception
