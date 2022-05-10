@@ -41,5 +41,5 @@ if os.name == "posix" and isinstance(handler, logging.StreamHandler) and is_a_tt
     _logger = logging.getLogger()
     _logger.handlers.pop()  # Remove default handler
     _logger.addHandler(handler)
-    _logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
+    _logger.setLevel(os.environ.get("LOG_LEVEL", "DEBUG"))
     handler.setFormatter(formatter)
