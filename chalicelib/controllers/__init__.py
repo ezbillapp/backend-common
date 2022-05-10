@@ -188,10 +188,10 @@ def add_session(f):
             if new_session:
                 _logger.debug("Session Commit")
                 new_session.commit()
-        except DatabaseError as exception:
+        except DatabaseError:
             _logger.exception("IntegrityError")
             new_session.rollback()
-            raise BadRequestError(f"Internal exception in the DB: {exception}") from exception
+            raise
         finally:
             if new_session:
                 new_session.close()
