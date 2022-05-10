@@ -190,7 +190,9 @@ def add_session(f):
                 new_session.commit()
         except DatabaseError:
             _logger.exception("IntegrityError")
-            new_session.rollback()
+            if new_session:
+                _logger.debug("Session Rollback")
+                new_session.rollback()
             raise
         finally:
             if new_session:
