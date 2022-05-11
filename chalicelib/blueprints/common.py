@@ -1,8 +1,8 @@
 from chalice import CORSConfig, UnauthorizedError
+
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
-from chalicelib.profilers import perf_profile
 
 cors_config = CORSConfig(
     allow_origin="*",
@@ -25,7 +25,6 @@ def get_search_attrs(json_body):
     return {attr: json_body.get(attr, default) for attr, default in attr_list.items()}
 
 
-@perf_profile
 def export(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     headers = bp.current_request.headers
