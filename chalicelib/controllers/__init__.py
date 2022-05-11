@@ -166,38 +166,51 @@ def test_session():
     session.close()
 
 
+@contextmanager
+def new_session():
+    session = Session(bind=engine)
+    try:
+        yield session
+        session.commit()
+    except DatabaseError:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 def add_session(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         session = kwargs.get("session")
-        new_session = None
+        local_new_session = None
         if session:
             _logger.debug("Session already provided: %s", session)
         else:
-            new_session = Session(engine)
+            local_new_session = Session(engine)
             _logger.debug(
                 "Generating new session: %s, for function: %s, args=%s, kwargs=%s",
-                new_session,
+                local_new_session,
                 f,
                 args,
                 kwargs,
             )
-            kwargs["session"] = new_session
+            kwargs["session"] = local_new_session
         try:
             res = f(*args, **kwargs)
-            if new_session:
+            if local_new_session:
                 _logger.debug("Session Commit")
-                new_session.commit()
+                local_new_session.commit()
         except DatabaseError:
             _logger.exception("IntegrityError")
-            if new_session:
+            if local_new_session:
                 _logger.debug("Session Rollback")
-                new_session.rollback()
+                local_new_session.rollback()
             raise
         finally:
-            if new_session:
-                new_session.close()
-                _logger.debug("Session %s closed", new_session)
+            if local_new_session:
+                local_new_session.close()
+                _logger.debug("Session %s closed", local_new_session)
         return res
 
     return wrapper
