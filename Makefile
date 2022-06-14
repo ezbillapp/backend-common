@@ -54,8 +54,8 @@ re-create-db: check
 	$(MAKE) migrate-db
 
 migrate-db:
-	cd chalicelib && alembic revision --autogenerate
-	cd chalicelib && alembic upgrade head
+	alembic -c chalicelib/alembic.ini revision --autogenerate
+	alembic -c chalicelib/alembic.ini upgrade head
 
 run:
 	chalice local --stage local
