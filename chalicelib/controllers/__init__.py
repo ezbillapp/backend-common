@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ChaliceViewError, ForbiddenError
+from chalicelib.new.config.infra import envars
 from chalicelib.schema import engine  # pylint: disable=no-name-in-module
 from chalicelib.schema.models.model import Model
 from sqlalchemy import Float, Integer, Numeric
@@ -258,7 +259,7 @@ def _round(value: float) -> float:
 def disable_if_dev(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
-        DEV_MODE = bool(os.environ.get("DEV_MODE", False))
+        DEV_MODE = bool(envars.DEV_MODE)
         if not DEV_MODE:
             return f(*args, **kwargs)
 

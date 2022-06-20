@@ -3,7 +3,6 @@ import enum
 import functools
 import io
 import logging
-import os
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
@@ -14,11 +13,6 @@ import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
-
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -32,6 +26,7 @@ from chalicelib.controllers import (
     is_x2m,
     utc_now,
 )
+from chalicelib.new.config.infra import envars
 from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     Company,
     Model,
@@ -39,10 +34,13 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     User,
     Workspace,
 )
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 _logger = logging.getLogger(__name__)
 
-EXPORT_BUCKET = os.environ.get("S3_EXPORT_BUCKET")
 EXPORT_EXPIRATION = 60 * 60 * 2
 
 primitives = {
@@ -688,14 +686,14 @@ class CommonController:
         _logger.info("Uploading to S3")
         s3_client.upload_fileobj(  # TODO deal with collisions
             io.BytesIO(data_bytes),
-            EXPORT_BUCKET,
+            envars.S3_EXPORT_BUCKET,
             filename,
         )
         _logger.info("Uploaded to S3")
         s3_url = s3_client.generate_presigned_url(
             "get_object",
             Params={
-                "Bucket": EXPORT_BUCKET,
+                "Bucket": envars.S3_EXPORT_BUCKET,
                 "Key": filename,
             },
             ExpiresIn=EXPORT_EXPIRATION,
