@@ -50,12 +50,12 @@ re-create-db: check
 	PGPASSWORD=$$DB_PASSWORD dropdb -h $$DB_HOST -p $$DB_PORT -U $$DB_USER $$DB_NAME
 	PGPASSWORD=$$DB_PASSWORD createdb -h $$DB_HOST -p $$DB_PORT -U $$DB_USER $$DB_NAME
 
-	rm -r chalicelib/alembic/versions/* || true
-	$(MAKE) migrate-db
+	alembic -c chalicelib/alembic.ini upgrade head
 
 migrate-db:
 	alembic -c chalicelib/alembic.ini revision --autogenerate
 	alembic -c chalicelib/alembic.ini upgrade head
+
 
 run:
 	chalice local --stage local
