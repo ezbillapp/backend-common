@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import Table
 
@@ -16,9 +17,15 @@ class Model(Base):
     __abstract__ = True
     __table__: Table
 
-    id = Column(
+    id = Column(  # TODO remove
         Integer,
         primary_key=True,
+    )
+    identifier = Column(
+        UUID(as_uuid=True),
+        index=True,
+        unique=True,
+        # nullable=False, # TODO make not nullable
     )
     created_at = Column(
         DateTime,
