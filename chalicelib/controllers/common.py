@@ -686,14 +686,14 @@ class CommonController:
         _logger.info("Uploading to S3")
         s3_client.upload_fileobj(  # TODO deal with collisions
             io.BytesIO(data_bytes),
-            envars.S3_EXPORT_BUCKET,
+            envars.S3_EXPORT,
             filename,
         )
         _logger.info("Uploaded to S3")
         s3_url = s3_client.generate_presigned_url(
             "get_object",
             Params={
-                "Bucket": envars.S3_EXPORT_BUCKET,
+                "Bucket": envars.S3_EXPORT,
                 "Key": filename,
             },
             ExpiresIn=EXPORT_EXPIRATION,
