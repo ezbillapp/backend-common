@@ -32,6 +32,7 @@ from chalicelib.controllers import (
     utc_now,
 )
 from chalicelib.new.config.infra import envars
+from chalicelib.new.shared.domain.primitives import identifier_default_factory
 from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     Company,
     Model,
@@ -294,6 +295,7 @@ class CommonController:
     @add_session
     @check_context
     def create(cls, data: Dict[str, Any], *, session=None, context=None):
+        data["identifier"] = data.get("identifier", identifier_default_factory())
         try:
             m2m = []
             for key, value in data.copy().items():

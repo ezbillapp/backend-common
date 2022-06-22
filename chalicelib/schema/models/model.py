@@ -22,7 +22,7 @@ class Model(Base):
         primary_key=True,
     )
     identifier = Column(
-        UUID(as_uuid=True),
+        UUID(),
         index=True,
         unique=True,
         # nullable=False, # TODO make not nullable
