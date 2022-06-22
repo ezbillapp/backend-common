@@ -110,6 +110,7 @@ class CommonController:
     }
     default_read_fields = {
         "id",
+        "identifier",
     }
     onchange_functions: Dict[str, List[Callable]] = {}
 
