@@ -48,6 +48,10 @@ class CodeName(Base):
         Integer,
         primary_key=True,
     )
+    identifier = Column(
+        UUID(),
+        index=True,
+    )
     code = Column(
         String,
         index=True,
