@@ -1,6 +1,8 @@
 import logging
 import os
 
+from chalicelib.new.config.infra import envars
+
 
 class DBFormatter(logging.Formatter):
     def format(self, record):
@@ -44,5 +46,5 @@ if os.name == "posix" and isinstance(handler, logging.StreamHandler) and is_a_tt
     with contextlib.suppress(IndexError):
         _logger.handlers.pop()  # Remove default handler
     _logger.addHandler(handler)
-    _logger.setLevel(logging.DEBUG)
+    _logger.setLevel(envars.LOG_LEVEL)
     handler.setFormatter(formatter)
