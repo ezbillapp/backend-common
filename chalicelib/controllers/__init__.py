@@ -7,12 +7,13 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ChaliceViewError, ForbiddenError
-from chalicelib.new.config.infra import envars
-from chalicelib.schema import engine  # pylint: disable=no-name-in-module
-from chalicelib.schema.models.model import Model
 from sqlalchemy import Float, Integer, Numeric
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import Session
+
+from chalicelib.new.config.infra import envars
+from chalicelib.schema import engine  # pylint: disable=no-name-in-module
+from chalicelib.schema.models.model import Model
 
 _logger = logging.getLogger(__name__)
 
@@ -176,7 +177,8 @@ def _local_session():
     try:
         yield _session
         _session.commit()
-    except DatabaseError:
+    except DatabaseError as e:
+        _logger.exception(e)
         _session.rollback()
         raise
     finally:
@@ -193,7 +195,8 @@ def _real_session():
     try:
         yield session
         session.commit()
-    except DatabaseError:
+    except DatabaseError as e:
+        _logger.exception(e)
         session.rollback()
         raise
     finally:
