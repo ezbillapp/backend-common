@@ -33,7 +33,12 @@ def _get_ssm_value(client, stage, var):
 def gen_env_vars_dict(stage: str) -> Dict[str, str]:
     """Generates a dictionary of environment variables"""
     client = boto3.client("ssm", region_name=REGION_NAME)
-    return {var: _get_ssm_value(client, stage, var) for var in ENV_VARS}
+    res = {}
+    for var in ENV_VARS:
+        val = _get_ssm_value(client, stage, var)
+        if val is not None:
+            res[var] = val
+    return res
 
 
 def save_env_vars_dict(template_path, config_path, stage, env_vars, subnets, security_groups):
