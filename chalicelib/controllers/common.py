@@ -2,7 +2,6 @@ import csv
 import enum
 import functools
 import io
-import logging
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
@@ -32,6 +31,7 @@ from chalicelib.controllers import (
     utc_now,
 )
 from chalicelib.new.config.infra import envars
+from chalicelib.new.config.infra.log import logger as _logger
 from chalicelib.new.shared.domain.primitives import identifier_default_factory
 from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     Company,
@@ -40,8 +40,6 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     User,
     Workspace,
 )
-
-_logger = logging.getLogger(__name__)
 
 EXPORT_EXPIRATION = 60 * 60 * 2
 

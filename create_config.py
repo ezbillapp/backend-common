@@ -7,11 +7,10 @@ import boto3
 
 _logger = logging.getLogger(__name__)
 
-CHALICE_CONGIFIG_TEMPLATE_FILE = ".chalice/template.config.json"
-CHALICE_CONGIFIG_FILE = ".chalice/config.json"
-
-
 from config import ENV_VARS, PROJECT_NAME, REGION_NAME
+
+CHALICE_CONFIG_TEMPLATE_FILE = ".chalice/template.config.json"
+CHALICE_CONFIG_FILE = ".chalice/config.json"
 
 
 def _get_key(stage, var):
@@ -43,7 +42,7 @@ def gen_env_vars_dict(stage: str) -> Dict[str, str]:
 
 def save_env_vars_dict(template_path, config_path, stage, env_vars, subnets, security_groups):
     """Writes all environment variables on build before deployment"""
-    with open(template_path, "r") as f:
+    with open(template_path, "r", encoding="UTF-8") as f:
         content = json.loads(f.read() or "{}")
         if "stages" not in content:
             content["stages"] = {}
@@ -52,7 +51,7 @@ def save_env_vars_dict(template_path, config_path, stage, env_vars, subnets, sec
         content["stages"][stage]["environment_variables"] = env_vars
         content["stages"][stage]["subnet_ids"] = subnets
         content["stages"][stage]["security_group_ids"] = security_groups
-        json.dump(content, open(config_path, "w"))
+        json.dump(content, open(config_path, "w", encoding="UTF-8"))
 
 
 def main():
@@ -64,8 +63,8 @@ def main():
     security_groups = [env_vars.pop(env_var) for env_var in ["SECURITY_GROUP"]]
     env_vars["STAGE"] = stage
     save_env_vars_dict(
-        CHALICE_CONGIFIG_TEMPLATE_FILE,
-        CHALICE_CONGIFIG_FILE,
+        CHALICE_CONFIG_TEMPLATE_FILE,
+        CHALICE_CONFIG_FILE,
         stage,
         env_vars,
         subnets,

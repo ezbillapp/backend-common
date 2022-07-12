@@ -1,5 +1,4 @@
 import functools
-import logging
 import operator
 import os
 from contextlib import contextmanager
@@ -12,10 +11,9 @@ from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import Session
 
 from chalicelib.new.config.infra import envars
+from chalicelib.new.config.infra.log import logger as _logger
 from chalicelib.schema import engine  # pylint: disable=no-name-in-module
 from chalicelib.schema.models.model import Model
-
-_logger = logging.getLogger(__name__)
 
 DECIMAL_PLACES = 6
 
