@@ -206,33 +206,21 @@ def add_session(f):
     def wrapper(*args, **kwargs):
         session = kwargs.get("session")
         local_new_session = None
-        if session:
-            _logger.debug("Session already provided: %s", session)
-        else:
+        if not session:
             local_new_session = Session(engine)
-            _logger.debug(
-                "Generating new session: %s, for function: %s, args=%s, kwargs=%s",
-                local_new_session,
-                f,
-                args,
-                kwargs,
-            )
             kwargs["session"] = local_new_session
         try:
             res = f(*args, **kwargs)
             if local_new_session:
-                _logger.debug("Session Commit")
                 local_new_session.commit()
         except DatabaseError:
             _logger.exception("IntegrityError")
             if local_new_session:
-                _logger.debug("Session Rollback")
                 local_new_session.rollback()
             raise
         finally:
             if local_new_session:
                 local_new_session.close()
-                _logger.debug("Session %s closed", local_new_session)
         return res
 
     return wrapper
