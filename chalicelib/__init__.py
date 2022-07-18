@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 
@@ -36,11 +37,11 @@ def is_a_tty(stream):
     return hasattr(stream, "fileno") and os.isatty(stream.fileno())
 
 
-import contextlib
-
 handler = logging.StreamHandler()
 log_format = "%(asctime)s %(pid)s %(levelname)s %(name)s: %(message)s"
 if os.name == "posix" and isinstance(handler, logging.StreamHandler) and is_a_tty(handler.stream):
+
+    logging.getLogger("botocore").setLevel(logging.WARNING)
     formatter = ColoredFormatter(log_format)
     _logger = logging.getLogger()
     with contextlib.suppress(IndexError):
