@@ -206,7 +206,10 @@ class CommonController:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
         query = cls.apply_domain(query, domain)
         if "active" in cls.model.__table__.c:
-            query = query.filter(cls.model.active == active)
+            active_filter = cls.model.active == active
+            active_filter = active_filter or cls.model.active is None if active else active_filter
+            query = query.filter(active_filter)
+
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
             query = query.distinct(cls.model.id)
