@@ -207,7 +207,9 @@ class CommonController:
         query = cls.apply_domain(query, domain)
         if "active" in cls.model.__table__.c:
             active_filter = cls.model.active == active
-            active_filter = active_filter or cls.model.active is None if active else active_filter
+            active_filter = (
+                or_(active_filter, cls.model.active is None) if active else active_filter
+            )
             query = query.filter(active_filter)
 
         if not order_by:
