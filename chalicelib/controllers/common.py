@@ -12,6 +12,11 @@ import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
+
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -35,10 +40,6 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     User,
     Workspace,
 )
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 EXPORT_EXPIRATION = 60 * 60 * 2
 
@@ -199,8 +200,9 @@ class CommonController:
         context=None,
         lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
+        object_to_query = cls.model if lazzy else cls.model.id
 
-        query = session.query(cls.model.id).select_from(cls.model)
+        query = session.query(object_to_query).select_from(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
         query = cls.apply_domain(query, domain)
@@ -225,9 +227,8 @@ class CommonController:
             offset = offset or 0
             real_offset = offset * limit
             ids = ids[real_offset : real_offset + limit]
-        records = (
-            session.query(cls.model).filter(cls.model.id.in_(ids)).order_by(text(order_by)).all()
-        )
+        query = session.query(cls.model).filter(cls.model.id.in_(ids)).order_by(text(order_by))
+        records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
         if need_count:
             return records, count
