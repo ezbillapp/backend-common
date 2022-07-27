@@ -131,7 +131,7 @@ class CommonController:
     @classmethod
     @add_session
     def _fuzzy_search(cls, query, fuzzy_search, *, session=None):
-        # REATE EXTENSION unaccent;
+        # CREATE EXTENSION unaccent;
         if not fuzzy_search:
             return query
         fuzzy_search = unidecode.unidecode(fuzzy_search)
@@ -274,7 +274,7 @@ class CommonController:
     @classmethod
     def _check_data_key_value(cls, key, value):
         if key in cls.restricted_fields:
-            raise ForbiddenError(f"The field '{key}' can not be setted manually")
+            raise ForbiddenError(f"The field '{key}' can not be set manually")
         if key in cls.pseudo_enums and value not in cls.pseudo_enums[key]:
             raise ForbiddenError(f"The field '{key}' don not supports '{value}' value")
 
@@ -720,14 +720,14 @@ class CommonController:
         raise MethodNotAllowedError("Resume not implemented")
 
 
-def get_m2m_repr(m2m_rel, attribs: Set[str]) -> List[Dict[str, Any]]:
+def get_m2m_repr(m2m_rel, attributes: Set[str]) -> List[Dict[str, Any]]:
     return [
         {
             attrib: getattr(
                 rel,
                 attrib,
             )
-            for attrib in attribs
+            for attrib in attributes
         }
         for rel in m2m_rel
     ]
