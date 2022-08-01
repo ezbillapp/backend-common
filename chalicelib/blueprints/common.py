@@ -124,3 +124,15 @@ def resume(bp, controller: CommonController):
     user = UserController.get_by_token(token)
     context = {"user": user}
     return controller.resume(domain, fuzzy_search, context=context)
+
+
+def get_count_cfdis(bp, controller: CommonController):
+    json_body = bp.current_request.json_body or {}
+    token = bp.current_request.headers["access_token"]
+
+    domain = json_body.get("domain", [])
+    fuzzy_search = json_body.get("fuzzy_search", [])
+    user = UserController.get_by_token(token)
+    context = {"user": user}
+    return controller.count_cfdis_by_type(domain, fuzzy_search, context=context)
+
