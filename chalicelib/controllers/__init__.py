@@ -82,9 +82,9 @@ def _get_filter_m2o(column, op, value):
     if value != "any":
         raise BadRequestError("Only value 'any' is accepted in relations")
     if op == "=":
-        return column.has()
+        return column.property.primaryjoin
     if op == "!=":
-        return ~column.has()
+        return ~column.property.primaryjoin
     raise BadRequestError("Only the operators '=' and '!=' are accepted in relations")
 
 
