@@ -12,11 +12,6 @@ import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
-
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -40,6 +35,10 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     User,
     Workspace,
 )
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 EXPORT_EXPIRATION = 60 * 60 * 2
 
@@ -170,7 +169,7 @@ class CommonController:
         return ", ".join(new_attrs)
 
     @classmethod
-    def apply_domain(cls, query, domain: List[Tuple[str, str, Any]]):
+    def apply_domain(cls, query, domain: List[Tuple[str, str, Any]], session=None):
         domain_doted = []
         domain_no_doted = []
         for t in domain:
@@ -178,9 +177,9 @@ class CommonController:
                 domain_doted.append(t)
             else:
                 domain_no_doted.append(t)
-        query = filter_query_doted(cls.model, query, domain_doted)
+        query = filter_query_doted(cls.model, query, domain_doted, session)
 
-        domain_parsed = filter_query(cls.model, domain_no_doted)
+        domain_parsed = filter_query(cls.model, domain_no_doted, session)
         query = query.filter(*domain_parsed)
         return query
 
@@ -205,7 +204,7 @@ class CommonController:
         query = session.query(object_to_query).select_from(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
-        query = cls.apply_domain(query, domain)
+        query = cls.apply_domain(query, domain, session)
         if "active" in cls.model.__table__.c:
             active_filter = cls.model.active == active
             active_filter = (

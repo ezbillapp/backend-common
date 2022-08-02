@@ -78,21 +78,24 @@ def is_x2m(model: Type[Model], field: str) -> Any:
     return rel and getattr(rel.property, "uselist", None) and rel
 
 
-def _get_filter_m2o(column, op, value):
+def _get_filter_m2o(column, op, value, session):
     if value != "any":
         raise BadRequestError("Only value 'any' is accepted in relations")
+    column_rel = tuple(column.property.primaryjoin.left.base_columns)[0]
+    column_rel_right = tuple(column.property.primaryjoin.right.base_columns)[0]
+    expr = column_rel_right.in_(session.query(column_rel))
     if op == "=":
-        return column.property.primaryjoin
+        return expr
     if op == "!=":
-        return ~column.property.primaryjoin
+        return ~expr
     raise BadRequestError("Only the operators '=' and '!=' are accepted in relations")
 
 
-def get_filter(model, raw):
+def get_filter(model, raw, session=None):
     key, op, value = raw
     column = getattr(model, key)
     if is_m2o(column):
-        return _get_filter_m2o(column, op, value)
+        return _get_filter_m2o(column, op, value, session)
     if is_x2m(model, key):
         return _get_filter_x2m(column, op, value)
 
@@ -106,11 +109,11 @@ def get_filter(model, raw):
     return real_op(column, value)
 
 
-def filter_query(model, raw_filters):
-    return [get_filter(model, raw) for raw in raw_filters]
+def filter_query(model, raw_filters, session=None):
+    return [get_filter(model, raw, session) for raw in raw_filters]
 
 
-def filter_query_doted(model, query, domain: Domain):
+def filter_query_doted(model, query, domain: Domain, session):
     join_models = {}
     filters = []
     for raw in domain:
@@ -129,7 +132,7 @@ def filter_query_doted(model, query, domain: Domain):
                 rel_id = f"{rel}_id"
                 join_models[current_model] = current_model.id == getattr(prev_model, rel_id)
             prev_model = current_model
-        filters.append(get_filter(current_model, (field, op, value)))
+        filters.append(get_filter(current_model, (field, op, value), session))
     for jm, on in join_models.items():
         query = query.join(jm, on)
     return query.filter(*filters)
