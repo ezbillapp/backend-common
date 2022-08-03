@@ -120,18 +120,12 @@ def filter_query_doted(model, query, domain: Domain, session):
         key, op, value = raw
         tokens = key.split(".")
         relations, field = tokens[:-1], tokens[-1]
-        current_model = prev_model = model
+        current_model = model
         for rel in relations:
             attrib = getattr(current_model, rel)
-            tmp_model = current_model
+            f = getattr(current_model, rel)
             current_model = get_model_from_relationship(attrib)
-            if is_x2m(tmp_model, rel):
-                rel_id = f"{prev_model.__table__.name}_id"
-                join_models[current_model] = getattr(current_model, rel_id) == prev_model.id
-            else:
-                rel_id = f"{rel}_id"
-                join_models[current_model] = current_model.id == getattr(prev_model, rel_id)
-            prev_model = current_model
+            join_models[current_model] = f.property.primaryjoin
         filters.append(get_filter(current_model, (field, op, value), session))
     for jm, on in join_models.items():
         query = query.join(jm, on)
