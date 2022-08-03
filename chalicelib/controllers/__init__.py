@@ -109,7 +109,7 @@ def get_filter(model, raw, session=None):
     return real_op(column, value)
 
 
-def filter_query(model, raw_filters, session=None):
+def filter_query(model, raw_filters, session):
     return [get_filter(model, raw, session) for raw in raw_filters]
 
 

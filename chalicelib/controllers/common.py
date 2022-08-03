@@ -12,6 +12,11 @@ import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
+
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -35,10 +40,6 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     User,
     Workspace,
 )
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 EXPORT_EXPIRATION = 60 * 60 * 2
 
@@ -169,7 +170,7 @@ class CommonController:
         return ", ".join(new_attrs)
 
     @classmethod
-    def apply_domain(cls, query, domain: List[Tuple[str, str, Any]], session=None):
+    def apply_domain(cls, query, domain: List[Tuple[str, str, Any]], session):
         domain_doted = []
         domain_no_doted = []
         for t in domain:
