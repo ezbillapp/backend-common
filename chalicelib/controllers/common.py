@@ -201,7 +201,6 @@ class CommonController:
         lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
         object_to_query = cls.model if lazzy else cls.model.id
-
         query = session.query(object_to_query).select_from(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
@@ -211,8 +210,8 @@ class CommonController:
             active_filter = (
                 or_(active_filter, cls.model.active is None) if active else active_filter
             )
-            query = query.filter(active_filter)
 
+            query = query.filter(active_filter)
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
             query = query.distinct(cls.model.id)
@@ -228,11 +227,10 @@ class CommonController:
             real_offset = offset * limit
             ids = ids[real_offset : real_offset + limit]
         query = session.query(cls.model).filter(cls.model.id.in_(ids)).order_by(text(order_by))
+
         records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
-        if need_count:
-            return records, count
-        return records
+        return (records, count) if need_count else records
 
     @classmethod
     @add_session
