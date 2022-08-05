@@ -1,8 +1,11 @@
 from chalice import CORSConfig, UnauthorizedError
+from chalicelib.bus import get_global_bus
 
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
+from chalicelib.new.cfdi_processor.domain.events.req_to_export import ExportEvent
+from chalicelib.new.shared.domain.event.event_type import EventType
 
 cors_config = CORSConfig(
     allow_origin="*",
@@ -50,7 +53,34 @@ def export(bp, controller: CommonController):
     )
     return controller.export(query, fields, export_format, context=context)
 
+def massive_export(bp, controller: CommonController):
+    json_body = bp.current_request.json_body or {}
+    headers = bp.current_request.headers
+    token = headers.get("access_token")
+    temporal_token = headers.get("temporal_token")
 
+    search_attrs = get_search_attrs(json_body)
+    search_attrs["limit"] = None
+    search_attrs["offset"] = None
+    fields = json_body.get("fields", [])
+    export_format = json_body.get("format", "csv")
+
+    if token:
+        user = UserController.get_by_token(token)
+        context = {"user": user}
+    elif temporal_token:
+        context = {"guest_partner": True}
+    else:
+        raise UnauthorizedError("No token provided")
+    bus = get_global_bus()
+    bus.publish(
+        EventType.USER_EXPORT,
+        ExportEvent(
+        json_body=json_body,       
+        ),
+        ) 
+    return 'done'
+    
 def search(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     headers = bp.current_request.headers
