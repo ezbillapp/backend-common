@@ -1,5 +1,4 @@
 from chalice import CORSConfig, UnauthorizedError
-
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
@@ -50,7 +49,28 @@ def export(bp, controller: CommonController):
     )
     return controller.export(query, fields, export_format, context=context)
 
+def massive_export(bp, controller: CommonController):
+    json_body = bp.current_request.json_body or {}
+    headers = bp.current_request.headers
+    token = headers.get("access_token")
+    temporal_token = headers.get("temporal_token")
 
+    search_attrs = get_search_attrs(json_body)
+    search_attrs["limit"] = None
+    search_attrs["offset"] = None
+    fields = json_body.get("fields", [])
+    export_format = json_body.get("format", "csv")
+
+    if token:
+        user = UserController.get_by_token(token)
+        context = {"user": user}
+    elif temporal_token:
+        context = {"guest_partner": True}
+    else:
+        raise UnauthorizedError("No token provided")
+    return json_body
+   
+    
 def search(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     headers = bp.current_request.headers
