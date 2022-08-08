@@ -1,11 +1,7 @@
 from chalice import CORSConfig, UnauthorizedError
-from chalicelib.bus import get_global_bus
-
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
-from chalicelib.new.cfdi_processor.domain.events.req_to_export import ExportEvent
-from chalicelib.new.shared.domain.event.event_type import EventType
 
 cors_config = CORSConfig(
     allow_origin="*",
@@ -72,14 +68,8 @@ def massive_export(bp, controller: CommonController):
         context = {"guest_partner": True}
     else:
         raise UnauthorizedError("No token provided")
-    bus = get_global_bus()
-    bus.publish(
-        EventType.USER_EXPORT,
-        ExportEvent(
-        json_body=json_body,       
-        ),
-        ) 
-    return 'done'
+    return json_body
+   
     
 def search(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
