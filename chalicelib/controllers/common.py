@@ -41,7 +41,7 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     Workspace,
 )
 
-EXPORT_EXPIRATION = 60 * 60 * 2
+EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
 primitives = {
     str,
