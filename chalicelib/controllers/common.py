@@ -87,7 +87,21 @@ def check_context(f):
         return res
 
     return wrapper
-
+resume_fields = (
+        "Tipo",
+        "Conteo de CFDIs",
+        "Retención IVA",
+        "Retención IEPS",
+        "Retención ISR",
+        "Traslado IVA",
+        "Traslado IEPS",
+        "Traslado ISR",
+        "Impuesto Local",
+        "Subtotal",
+        "Descuento",
+        "Neto",
+        "Total",
+    )
 
 class CommonController:
     model: Type[Model]
@@ -615,9 +629,10 @@ class CommonController:
         return f.getvalue().encode("utf-8")
 
     @staticmethod
-    def to_xlsx(query: Query, fields: List[str], session, context) -> bytes:
+    def to_xlsx(query: Query, fields: List[str],resume, session, context) -> bytes:
         wb = Workbook()
         ws = wb.active
+        ws.title = "Cfdis"
         ws.append(fields)
         for record in query:
             data = [_plain_field(record, field) for field in fields]
@@ -625,6 +640,52 @@ class CommonController:
         for column_cells in ws.columns:
             length = max(len(str(cell.value)) for cell in column_cells)
             ws.column_dimensions[column_cells[0].column_letter].width = length * 1.1  # Magic Number
+        ws2 = wb.create_sheet("Totales")
+        ws2.append(resume_fields)
+        if resume["filtered"]:
+            filtered = [
+                "Periodo",
+                resume["filtered"]["count"],
+                resume["filtered"]["RetencionesIVA"],
+                resume["filtered"]["RetencionesIEPS"],
+                resume["filtered"]["RetencionesISR"],
+                resume["filtered"]["TrasladosIVA"],
+                resume["filtered"]["TrasladosIEPS"],
+                resume["filtered"]["TrasladosISR"],
+                resume["filtered"]["ImpuestosRetenidos"],
+                resume["filtered"]["SubTotal"],
+                resume["filtered"]["Descuento"],
+                resume["filtered"]["Neto"],
+                resume["filtered"]["Total"],
+            ]
+
+            ws2.append(filtered)
+
+        if resume["excercise"]:
+            excercise = [
+                "Acumulado",
+                resume["excercise"]["count"],
+                resume["excercise"]["RetencionesIVA"],
+                resume["excercise"]["RetencionesIEPS"],
+                resume["excercise"]["RetencionesISR"],
+                resume["excercise"]["TrasladosIVA"],
+                resume["excercise"]["TrasladosIEPS"],
+                resume["excercise"]["TrasladosISR"],
+                resume["excercise"]["ImpuestosRetenidos"],
+                resume["excercise"]["SubTotal"],
+                resume["excercise"]["Descuento"],
+                resume["excercise"]["Neto"],
+                resume["excercise"]["Total"],
+            ]
+
+            ws2.append(excercise)
+
+        for column_cells in ws2.columns:
+            length = max(len(str(cell.value)) for cell in column_cells)
+            ws2.column_dimensions[column_cells[0].column_letter].width = (
+                length * 1.1
+            )  # Magic Number
+
         with NamedTemporaryFile(suffix="xlsx") as f:
             wb.save(f.name)
             with open(f.name, "rb") as f2:
@@ -665,7 +726,7 @@ class CommonController:
     @classmethod
     @add_session
     def export(
-        cls, query: Query, fields: List[str], export_str: str, *, session, context
+        cls, query: Query, fields: List[str], export_str: str,resume_export=None, *, session, context
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         EXPORTERS = {
@@ -686,7 +747,11 @@ class CommonController:
         _logger.info("Exporting records")
         if not query.count():
             raise NotFoundError("No records found")
-        data_bytes = exporter(query, fields, session, context)
+        data_bytes = None
+        if export_str in ["XLSX", "xlsx"]:
+            data_bytes = exporter(query, fields,resume_export, session, context)
+        else:       
+            data_bytes = exporter(query, fields, session, context)
         model_name = cls.model.__name__
         now = utc_now()
         date_str = now.strftime("%Y_%m_%d_%H_%M_%S")

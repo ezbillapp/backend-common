@@ -35,6 +35,9 @@ def export(bp, controller: CommonController):
     search_attrs["offset"] = None
     fields = json_body.get("fields", [])
     export_format = json_body.get("format", "csv")
+    resume_export = None
+    if export_format in ["xlsx","XLSX"]:
+        resume_export = resume(bp, controller)
 
     if token:
         user = UserController.get_by_token(token)
@@ -47,7 +50,7 @@ def export(bp, controller: CommonController):
     query = controller._search(  # pylint: disable=protected-access
         **search_attrs, context=context, lazzy=True
     )
-    return controller.export(query, fields, export_format, context=context)
+    return controller.export(query, fields, export_format,resume_export, context=context)
 
 def massive_export(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
