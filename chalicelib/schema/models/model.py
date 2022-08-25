@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Column, DateTime, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from chalicelib.new.shared.infra.sqlalchemy_repo import IdentifierORM
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import Table
 
@@ -22,7 +22,7 @@ class Model(Base):
         primary_key=True,
     )
     identifier = Column(
-        UUID(),
+        IdentifierORM(),
         index=True,
         unique=True,
         # nullable=False, # TODO make not nullable
@@ -49,7 +49,7 @@ class CodeName(Base):
         primary_key=True,
     )
     identifier = Column(
-        UUID(),
+        IdentifierORM(),
         index=True,
     )
     code = Column(
