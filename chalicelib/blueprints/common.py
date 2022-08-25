@@ -1,4 +1,5 @@
 from chalice import CORSConfig, UnauthorizedError
+
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
@@ -36,7 +37,7 @@ def export(bp, controller: CommonController):
     fields = json_body.get("fields", [])
     export_format = json_body.get("format", "csv")
     resume_export = None
-    if export_format in ["xlsx","XLSX"]:
+    if export_format in ["xlsx", "XLSX"]:
         resume_export = resume(bp, controller)
 
     if token:
@@ -50,7 +51,8 @@ def export(bp, controller: CommonController):
     query = controller._search(  # pylint: disable=protected-access
         **search_attrs, context=context, lazzy=True
     )
-    return controller.export(query, fields, export_format,resume_export, context=context)
+    return controller.export(query, fields, export_format, resume_export, context=context)
+
 
 def massive_export(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
@@ -72,8 +74,8 @@ def massive_export(bp, controller: CommonController):
     else:
         raise UnauthorizedError("No token provided")
     return json_body
-   
-    
+
+
 def search(bp, controller: CommonController):
     json_body = bp.current_request.json_body or {}
     headers = bp.current_request.headers
@@ -158,4 +160,3 @@ def get_count_cfdis(bp, controller: CommonController):
     user = UserController.get_by_token(token)
     context = {"user": user}
     return controller.count_cfdis_by_type(domain, fuzzy_search, context=context)
-

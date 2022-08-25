@@ -12,11 +12,6 @@ import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
-
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -40,6 +35,10 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     User,
     Workspace,
 )
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
@@ -87,21 +86,24 @@ def check_context(f):
         return res
 
     return wrapper
+
+
 resume_fields = (
-        "Tipo",
-        "Conteo de CFDIs",
-        "Retención IVA",
-        "Retención IEPS",
-        "Retención ISR",
-        "Traslado IVA",
-        "Traslado IEPS",
-        "Traslado ISR",
-        "Impuesto Local",
-        "Subtotal",
-        "Descuento",
-        "Neto",
-        "Total",
-    )
+    "Tipo",
+    "Conteo de CFDIs",
+    "Retención IVA",
+    "Retención IEPS",
+    "Retención ISR",
+    "Traslado IVA",
+    "Traslado IEPS",
+    "Traslado ISR",
+    "Impuesto Local",
+    "Subtotal",
+    "Descuento",
+    "Neto",
+    "Total",
+)
+
 
 class CommonController:
     model: Type[Model]
@@ -629,7 +631,7 @@ class CommonController:
         return f.getvalue().encode("utf-8")
 
     @staticmethod
-    def to_xlsx(query: Query, fields: List[str],resume, session, context) -> bytes:
+    def to_xlsx(query: Query, fields: List[str], resume, session, context) -> bytes:
         wb = Workbook()
         ws = wb.active
         ws.title = "Cfdis"
@@ -726,7 +728,14 @@ class CommonController:
     @classmethod
     @add_session
     def export(
-        cls, query: Query, fields: List[str], export_str: str,resume_export=None, *, session, context
+        cls,
+        query: Query,
+        fields: List[str],
+        export_str: str,
+        resume_export=None,
+        *,
+        session,
+        context,
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         EXPORTERS = {
@@ -749,8 +758,8 @@ class CommonController:
             raise NotFoundError("No records found")
         data_bytes = None
         if export_str in ["XLSX", "xlsx"]:
-            data_bytes = exporter(query, fields,resume_export, session, context)
-        else:       
+            data_bytes = exporter(query, fields, resume_export, session, context)
+        else:
             data_bytes = exporter(query, fields, session, context)
         model_name = cls.model.__name__
         now = utc_now()
