@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from logging.config import fileConfig
 
@@ -37,6 +38,29 @@ config.set_main_option(
 )
 
 
+def get_excludes_from_config(config_, type_="tables"):
+    excludes = config_.get(type_, None)
+    if excludes is not None:
+        excludes = excludes.split(",")
+    return excludes
+
+
+excluded_tables = get_excludes_from_config(config.get_section("exclude"), "tables")
+excluded_indices = get_excludes_from_config(config.get_section("exclude"), "indices")
+
+
+def include_object(obj, name, type_, reflected, compare_to):
+    if type_ == "table":
+        for table_pat in excluded_tables:
+            if re.match(table_pat, name):
+                return False
+    elif type_ == "index":
+        for index_pat in excluded_indices:
+            if re.match(index_pat, name):
+                return False
+    return True
+
+
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -55,6 +79,7 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -75,7 +100,11 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
