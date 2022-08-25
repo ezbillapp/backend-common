@@ -27,7 +27,7 @@ from chalicelib.controllers import (
 )
 from chalicelib.new.config.infra import envars
 from chalicelib.new.config.infra.log import logger as _logger
-from chalicelib.new.shared.domain.primitives import identifier_default_factory
+from chalicelib.new.shared.domain.primitives import Identifier, identifier_default_factory
 from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     Company,
     Model,
@@ -175,13 +175,13 @@ class CommonController:
             order_by = cls._order_by
         elif "name" in cls.model.__table__.c:
             order_by = "name"
-        return f"id, {order_by}" if order_by else "id"
+        return order_by or "id"
 
     @staticmethod
     def _normalize_order_by(model: Type[Model], order_by: str) -> str:
         table_name = model.__table__.name
-        order_by = order_by.replace(f"{table_name}.", "")
-        attrs = order_by.split(", ")
+        order_by = order_by.replace(f"{table_name}.", "").replace('"', "")
+        attrs = [f'"{attr}"' for attr in order_by.split(", ")]
         new_attrs = [f"{model.__table__.name}.{attr}" for attr in attrs]
         return ", ".join(new_attrs)
 
@@ -216,8 +216,7 @@ class CommonController:
         context=None,
         lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
-        object_to_query = cls.model if lazzy else cls.model.id
-        query = session.query(object_to_query).select_from(cls.model)
+        query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
         query = cls.apply_domain(query, domain, session)
@@ -230,20 +229,15 @@ class CommonController:
             query = query.filter(active_filter)
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
-            query = query.distinct(cls.model.id)
         if need_count:
             count = query.count()
         order_by = cls._normalize_order_by(cls.model, order_by)
-        query = query.order_by(text(order_by))
+        query: Query = query.order_by(text(order_by))
         if lazzy:
             return query
-        ids = tuple(t[0] for t in query)
         if limit is not None:
             offset = offset or 0
-            real_offset = offset * limit
-            ids = ids[real_offset : real_offset + limit]
-        query = session.query(cls.model).filter(cls.model.id.in_(ids)).order_by(text(order_by))
-
+            query = query.offset(offset).limit(limit)
         records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
         return (records, count) if need_count else records
@@ -347,6 +341,7 @@ class CommonController:
             datetime: lambda x: x.isoformat(),
             date: lambda x: x.isoformat(),
             enum.Enum: lambda x: x.name,
+            Identifier: lambda x: str(x),  # pylint: disable=unnecessary-lambda
         }
         return converters.get(value_class, lambda x: x)(data)
 
