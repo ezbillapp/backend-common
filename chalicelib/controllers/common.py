@@ -181,9 +181,14 @@ class CommonController:
     def _normalize_order_by(model: Type[Model], order_by: str) -> str:
         table_name = model.__table__.name
         order_by = order_by.replace(f"{table_name}.", "").replace('"', "")
-        attrs = [f'"{attr}"' for attr in order_by.split(", ")]
-        new_attrs = [f"{model.__table__.name}.{attr}" for attr in attrs]
-        return ", ".join(new_attrs)
+        parts = order_by.split(",")
+        scaped = []
+        for part in parts:
+            components = part.strip().split(" ")
+            column = components[0]
+            order_mode = components[1] if len(components) > 1 else "asc"
+            scaped.append(f'{model.__table__.name}."{column}" {order_mode}')
+        return ", ".join(scaped)
 
     @classmethod
     def apply_domain(cls, query, domain: List[Tuple[str, str, Any]], session):
