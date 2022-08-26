@@ -242,7 +242,7 @@ class CommonController:
             return query
         if limit is not None:
             offset = offset or 0
-            query = query.offset(offset).limit(limit)
+            query = query.offset(offset * limit).limit(limit)
         records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
         return (records, count) if need_count else records
