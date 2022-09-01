@@ -2,7 +2,7 @@ import functools
 import operator
 import os
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Set, Tuple, Type
 
 from chalice import BadRequestError, ChaliceViewError, ForbiddenError
