@@ -221,6 +221,7 @@ class CommonController:
         context=None,
         lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
+        cls.assert_scoped_domain(domain)
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
@@ -246,6 +247,10 @@ class CommonController:
         records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
         return (records, count) if need_count else records
+
+    @classmethod
+    def assert_scoped_domain(cls, domain: Domain):
+        """To implement in each model"""
 
     @classmethod
     @add_session
@@ -277,12 +282,6 @@ class CommonController:
             records.pop()
             next_page = True
         return records, next_page, total_records
-
-    @classmethod
-    @add_session
-    def all_ids(cls, *, session=None) -> Set[int]:
-        records = session.query(cls.model.id).all()
-        return {record[0] for record in records}
 
     @classmethod
     def _check_data_key_value(cls, key, value):
