@@ -701,13 +701,12 @@ class CommonController:
         """Return a ZIP with the XML's of the records"""
         controllers_by_model = CommonController.get_controllers_by_model()
         controller = controllers_by_model[query[0].__class__]
-        urls = controller.get_xml(query.all())
+        cfdis = controller.get_xml(query.all())
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
-            for row in urls:
-                uuid, url = row["uuid"], row["xml_url"]
-                xml = requests.get(url).content  # TODO async
-                zf.writestr(f"{uuid}.xml", xml)
+            for row in cfdis:
+                uuid, xml_content = row["uuid"], row["xml_content"]                
+                zf.writestr(f"{uuid}.xml", xml_content)
         return f.getvalue()
 
     @classmethod
