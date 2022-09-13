@@ -8,10 +8,14 @@ from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 from zipfile import ZipFile
 
 import boto3
-import requests
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import or_, text
+from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
+
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -35,10 +39,6 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     User,
     Workspace,
 )
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
@@ -705,7 +705,7 @@ class CommonController:
         f = io.BytesIO()
         with ZipFile(f, "w") as zf:
             for row in cfdis:
-                uuid, xml_content = row["uuid"], row["xml_content"]                
+                uuid, xml_content = row["uuid"], row["xml_content"]
                 zf.writestr(f"{uuid}.xml", xml_content)
         return f.getvalue()
 
