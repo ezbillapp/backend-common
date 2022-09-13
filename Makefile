@@ -27,13 +27,13 @@ test:
 	coverage html
 
 lint-format:
-	black --exclude versions -l 100 --check .
+	black --check .
 
 review: lint-format lint typehint test
 
 format:
 	isort .
-	black --exlude versions -l 100 .
+	black .
 
 clean: check
 	find chalicelib -type f -name "*.pyc" -delete
