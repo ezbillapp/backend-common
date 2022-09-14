@@ -12,7 +12,21 @@ from .. import meta
 Base: Any = declarative_base(metadata=meta)
 
 
-class Model(Base):
+class BasicModel(Base):
+    __abstract__ = True
+    __table__: Table
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+    )
+    updated_at = Column(
+        DateTime,
+        onupdate=datetime.utcnow,
+    )
+
+
+class Model(BasicModel):
     """Base model for all the models to be peristed in the database"""
 
     __abstract__ = True
@@ -27,14 +41,6 @@ class Model(Base):
         index=True,
         unique=True,
         # nullable=False, # TODO make not nullable
-    )
-    created_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-    )
-    updated_at = Column(
-        DateTime,
-        onupdate=datetime.utcnow,
     )
 
 
