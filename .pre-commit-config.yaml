@@ -1,5 +1,5 @@
 
-exclude: env.py|chalicelib/common|tests/data
+exclude: versions.*|env.py|chalicelib/common|tests/data
 default_language_version:
   python: python39
 repos:
