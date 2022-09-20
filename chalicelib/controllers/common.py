@@ -5,6 +5,7 @@ import io
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
+from uuid import UUID
 from zipfile import ZipFile
 
 import boto3
@@ -160,20 +161,28 @@ class CommonController:
             for subfield in subfields
         )
         if cls.model.UUID:
-            query = query.filter(
-                or_(
-                    cls.model.UUID == fuzzy_search.lower(),
-                    *fuzzy_filter,
-                    *fuzzy_sub_filter,
+            uuid = None
+            try:
+                uuid = UUID(fuzzy_search)
+            except ValueError as verr:
+                pass 
+            except Exception as ex:
+                pass 
+            if uuid:
+                query = query.filter(
+                    or_(
+                        cls.model.UUID == fuzzy_search.lower(),
+                        *fuzzy_filter,
+                        *fuzzy_sub_filter,
+                    )
                 )
+                return query
+        query = query.filter(
+            or_(
+                *fuzzy_filter,
+                *fuzzy_sub_filter,
             )
-        else:
-            query = query.filter(
-                or_(
-                    *fuzzy_filter,
-                    *fuzzy_sub_filter,
-                )
-            )
+        )
         return query
 
     @classmethod
