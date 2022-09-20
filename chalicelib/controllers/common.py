@@ -254,7 +254,7 @@ class CommonController:
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
         if need_count:
-            count = query.count()
+            count = query.distinct().count()
         order_by = cls._normalize_order_by(cls.model, order_by)
         query: Query = query.order_by(text(order_by))
         if lazzy:
