@@ -159,12 +159,21 @@ class CommonController:
             for field, subfields in cls.fuzzy_has.items()
             for subfield in subfields
         )
-        query = query.filter(
-            or_(
-                *fuzzy_filter,
-                *fuzzy_sub_filter,
+        if cls.model.UUID:
+            query = query.filter(
+                or_(
+                    cls.model.UUID == fuzzy_search.lower(),
+                    *fuzzy_filter,
+                    *fuzzy_sub_filter,
+                )
             )
-        )
+        else:
+            query = query.filter(
+                or_(
+                    *fuzzy_filter,
+                    *fuzzy_sub_filter,
+                )
+            )
         return query
 
     @classmethod
