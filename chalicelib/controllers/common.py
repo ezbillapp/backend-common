@@ -1,3 +1,4 @@
+import contextlib
 import csv
 import enum
 import functools
@@ -161,7 +162,10 @@ class CommonController:
             for field, subfields in cls.fuzzy_has.items()
             for subfield in subfields
         )
-        if cls.model.UUID:
+        model_uuid = None
+        with contextlib.suppress(Exception):
+            model_uuid = cls.model.UUID
+        if model_uuid:
             uuid = None
             try:
                 uuid = UUID(fuzzy_search)
