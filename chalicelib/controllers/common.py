@@ -15,7 +15,7 @@ from chalice.app import MethodNotAllowedError  # type: ignore
 from openpyxl import Workbook  # type: ignore
 from sqlalchemy import inspect, or_, text
 from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.expression import TupleSQL
+from sqlalchemy.sql.expression import Tuple as TupleSQL
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 from chalicelib.controllers import (
