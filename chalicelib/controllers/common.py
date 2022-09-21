@@ -13,8 +13,9 @@ import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
 from openpyxl import Workbook  # type: ignore
-from sqlalchemy import or_, text
+from sqlalchemy import inspect, or_, text
 from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.expression import TupleSQL
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 from chalicelib.controllers import (
@@ -165,9 +166,9 @@ class CommonController:
             try:
                 uuid = UUID(fuzzy_search)
             except ValueError as verr:
-                pass 
+                pass
             except Exception as ex:
-                pass 
+                pass
             if uuid:
                 query = query.filter(
                     or_(
@@ -240,7 +241,8 @@ class CommonController:
         lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
         cls.assert_scoped_domain(domain)
-        query = session.query(cls.model)
+        primary_key_fields = cls.model.__table__.primary_key.columns
+        query = session.query(*primary_key_fields)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
         query = cls.apply_domain(query, domain, session)
@@ -262,7 +264,10 @@ class CommonController:
         if limit is not None:
             offset = offset or 0
             query = query.offset(offset * limit).limit(limit)
-        records = query.all()
+        primary_keys = query.all()
+        records = (
+            session.query(cls.model).filter(TupleSQL(*primary_key_fields).in_(primary_keys)).all()
+        )
         cls.ensure_role_access(records, session=session, context=context)
         return (records, count) if need_count else records
 
