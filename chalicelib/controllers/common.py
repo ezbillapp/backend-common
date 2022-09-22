@@ -19,6 +19,7 @@ from sqlalchemy.orm import Query, relationship
 from sqlalchemy.sql.expression import Tuple as TupleSQL
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 from sqlalchemy import cast, VARCHAR
+
 from chalicelib.controllers import (
     Domain,
     SearchResult,
