@@ -18,7 +18,7 @@ from sqlalchemy import inspect, or_, text
 from sqlalchemy.orm import Query, relationship
 from sqlalchemy.sql.expression import Tuple as TupleSQL
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
-
+from sqlalchemy import cast, VARCHAR
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -165,23 +165,18 @@ class CommonController:
         model_uuid = None
         with contextlib.suppress(Exception):
             model_uuid = cls.model.UUID
+        model_uuid = None
+        with contextlib.suppress(Exception):
+            model_uuid = cls.model.UUID
         if model_uuid:
-            uuid = None
-            try:
-                uuid = UUID(fuzzy_search)
-            except ValueError as verr:
-                pass
-            except Exception as ex:
-                pass
-            if uuid:
-                query = query.filter(
-                    or_(
-                        cls.model.UUID == fuzzy_search.lower(),
-                        *fuzzy_filter,
-                        *fuzzy_sub_filter,
-                    )
+            query = query.filter(
+                or_(
+                    cast(cls.model.UUID,VARCHAR).ilike(f"%{fuzzy_search.lower()}%"),
+                    *fuzzy_filter,
+                    *fuzzy_sub_filter,
                 )
-                return query
+            )
+            return query
         query = query.filter(
             or_(
                 *fuzzy_filter,
