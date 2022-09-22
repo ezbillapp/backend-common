@@ -241,8 +241,11 @@ class CommonController:
         lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
         cls.assert_scoped_domain(domain)
-        primary_key_fields = cls.model.__table__.primary_key.columns
-        query = session.query(*primary_key_fields)
+        if not lazzy:            
+            primary_key_fields = cls.model.__table__.primary_key.columns
+            query = session.query(*primary_key_fields)
+        else:
+            query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
         query = cls.apply_domain(query, domain, session)
@@ -256,7 +259,7 @@ class CommonController:
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
         if need_count:
-            count = query.distinct().count()
+            count = query().count() if lazzy else query.distinct().count()
         order_by = cls._normalize_order_by(cls.model, order_by)
         query: Query = query.order_by(text(order_by))
         if lazzy:
