@@ -241,11 +241,7 @@ class CommonController:
         lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
         cls.assert_scoped_domain(domain)
-        if not lazzy:            
-            primary_key_fields = cls.model.__table__.primary_key.columns
-            query = session.query(*primary_key_fields)
-        else:
-            query = session.query(cls.model)
+        query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
         query = cls.apply_domain(query, domain, session)
@@ -254,12 +250,15 @@ class CommonController:
             active_filter = (
                 or_(active_filter, cls.model.active is None) if active else active_filter
             )
-
             query = query.filter(active_filter)
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
+        try:
+            xml_content_field=cls.model.xml_content
+        except Exception:
+           query = query.distinct()
         if need_count:
-            count = query().count() if lazzy else query.distinct().count()
+            count = query.count()
         order_by = cls._normalize_order_by(cls.model, order_by)
         query: Query = query.order_by(text(order_by))
         if lazzy:
@@ -267,10 +266,7 @@ class CommonController:
         if limit is not None:
             offset = offset or 0
             query = query.offset(offset * limit).limit(limit)
-        primary_keys = query.all()
-        records = (
-            session.query(cls.model).filter(TupleSQL(*primary_key_fields).in_(primary_keys)).all()
-        )
+        records = query.all()
         cls.ensure_role_access(records, session=session, context=context)
         return (records, count) if need_count else records
 
