@@ -33,6 +33,7 @@ review: lint-format lint typehint test
 
 format:
 	isort .
+	autoflake --in-place --remove-all-unused-imports -r --ignore-init-module-imports .
 	black .
 
 clean: check

@@ -6,43 +6,26 @@ import io
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
-from uuid import UUID
 from zipfile import ZipFile
 
 import boto3
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
-from openpyxl import Workbook  # type: ignore
-from sqlalchemy import inspect, or_, text
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.sql.expression import Tuple as TupleSQL
-from sqlalchemy.sql.functions import ReturnTypeFromArgs
-from sqlalchemy import cast, VARCHAR
-
-from chalicelib.controllers import (
-    Domain,
-    SearchResult,
-    SearchResultPaged,
-    add_session,
-    ensure_list,
-    ensure_set,
-    filter_query,
-    filter_query_doted,
-    is_super_user,
-    is_x2m,
-    utc_now,
-)
+from chalicelib.controllers import (Domain, SearchResult, SearchResultPaged,
+                                    add_session, ensure_list, ensure_set,
+                                    filter_query, filter_query_doted,
+                                    is_super_user, is_x2m, utc_now)
 from chalicelib.new.config.infra import envars
 from chalicelib.new.config.infra.log import logger as _logger
-from chalicelib.new.shared.domain.primitives import Identifier, identifier_default_factory
+from chalicelib.new.shared.domain.primitives import (
+    Identifier, identifier_default_factory)
 from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
-    Company,
-    Model,
-    Permission,
-    User,
-    Workspace,
-)
+    Company, Model, Permission, User, Workspace)
+from openpyxl import Workbook  # type: ignore
+from sqlalchemy import VARCHAR, cast, or_, text
+from sqlalchemy.orm import Query, relationship
+from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
@@ -172,7 +155,7 @@ class CommonController:
         if model_uuid:
             query = query.filter(
                 or_(
-                    cast(cls.model.UUID,VARCHAR).ilike(f"%{fuzzy_search.lower()}%"),
+                    cast(cls.model.UUID, VARCHAR).ilike(f"%{fuzzy_search.lower()}%"),
                     *fuzzy_filter,
                     *fuzzy_sub_filter,
                 )
@@ -254,9 +237,9 @@ class CommonController:
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
         try:
-            xml_content_field=cls.model.xml_content
+            xml_content_field = cls.model.xml_content
         except Exception:
-           query = query.distinct()
+            query = query.distinct()
         if need_count:
             count = query.count()
         order_by = cls._normalize_order_by(cls.model, order_by)
