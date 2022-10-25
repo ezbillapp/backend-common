@@ -3,6 +3,7 @@ import logging
 import os
 
 from chalicelib.new.config.infra import envars
+from chalicelib.new.config.infra.log import CFDI_TO_FIX
 
 
 class DBFormatter(logging.Formatter):
@@ -37,10 +38,32 @@ def is_a_tty(stream):
     return hasattr(stream, "fileno") and os.isatty(stream.fileno())
 
 
-handler = logging.StreamHandler()
-log_format = "%(asctime)s %(pid)s %(levelname)s %(name)s: %(message)s"
-if os.name == "posix" and isinstance(handler, logging.StreamHandler) and is_a_tty(handler.stream):
+def addLoggingLevel(levelName, levelNum, methodName=None):
+    if not methodName:
+        methodName = levelName.lower()
 
+    if hasattr(logging, levelName):
+        raise AttributeError("{} already defined in logging module".format(levelName))
+    if hasattr(logging, methodName):
+        raise AttributeError("{} already defined in logging module".format(methodName))
+    if hasattr(logging.getLoggerClass(), methodName):
+        raise AttributeError("{} already defined in logger class".format(methodName))
+
+    def logForLevel(self, message, *args, **kwargs):
+        if self.isEnabledFor(levelNum):
+            self._log(levelNum, message, args, **kwargs)  # pylint: disable=protected-access
+
+    def logToRoot(message, *args, **kwargs):
+        logging.log(levelNum, message, *args, **kwargs)
+
+    logging.addLevelName(levelNum, levelName)
+    setattr(logging, levelName, levelNum)
+    setattr(logging.getLoggerClass(), methodName, logForLevel)
+    setattr(logging, methodName, logToRoot)
+
+
+def configure_logging(handler):
+    log_format = "%(asctime)s %(pid)s %(levelname)s %(name)s: %(message)s"
     logging.getLogger("botocore").setLevel(logging.WARNING)
     formatter = ColoredFormatter(log_format)
     _logger = logging.getLogger()
@@ -49,3 +72,15 @@ if os.name == "posix" and isinstance(handler, logging.StreamHandler) and is_a_tt
     _logger.addHandler(handler)
     _logger.setLevel(envars.LOG_LEVEL)
     handler.setFormatter(formatter)
+
+
+addLoggingLevel("CFDI_TO_FIX", CFDI_TO_FIX)
+
+
+global_handler = logging.StreamHandler()
+if (
+    os.name == "posix"
+    and isinstance(global_handler, logging.StreamHandler)
+    and is_a_tty(global_handler.stream)
+):
+    configure_logging(global_handler)
