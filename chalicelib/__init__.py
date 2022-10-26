@@ -24,7 +24,11 @@ LEVEL_COLOR_MAPPING = {
 RESET_SEQ = "\033[0m"
 COLOR_SEQ = "\033[1;%dm"
 BOLD_SEQ = "\033[1m"
-COLOR_PATTERN = "%s%s%%s%s" % (COLOR_SEQ, COLOR_SEQ, RESET_SEQ)
+COLOR_PATTERN = "%s%s%%s%s" % (  # pylint: disable=consider-using-f-string
+    COLOR_SEQ,
+    COLOR_SEQ,
+    RESET_SEQ,
+)
 
 
 class ColoredFormatter(DBFormatter):
@@ -43,11 +47,11 @@ def addLoggingLevel(levelName, levelNum, methodName=None):
         methodName = levelName.lower()
 
     if hasattr(logging, levelName):
-        raise AttributeError("{} already defined in logging module".format(levelName))
+        raise AttributeError(f"{levelName} already defined in logging module")
     if hasattr(logging, methodName):
-        raise AttributeError("{} already defined in logging module".format(methodName))
+        raise AttributeError(f"{methodName} already defined in logging module")
     if hasattr(logging.getLoggerClass(), methodName):
-        raise AttributeError("{} already defined in logger class".format(methodName))
+        raise AttributeError(f"{methodName} already defined in logger class")
 
     def logForLevel(self, message, *args, **kwargs):
         if self.isEnabledFor(levelNum):

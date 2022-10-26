@@ -33,10 +33,6 @@ operators = {
 }
 
 
-MISSING_FIELD = False
-NUMERICS = {Integer, Float, Numeric}
-
-
 def get_model_from_relationship(relationship) -> Model:
     return relationship.property.mapper.class_
 
@@ -48,6 +44,7 @@ def _get_x2m_cardinal_filter(column, op, value):
         return column.any()
     if op == "!=":
         return ~column.any()
+    raise BadRequestError("Only the operators '=' and '!=' are accepted in relations")
 
 
 def _get_x2m_relational_filter(column, op, value):
@@ -153,14 +150,6 @@ def ensure_set(f):
     return wrapper
 
 
-@contextmanager
-def test_session():
-    session = Session(bind=engine)
-    yield session
-    session.rollback()
-    session.close()
-
-
 _session = None
 
 
@@ -239,11 +228,6 @@ def is_super_user(context: Dict[str, Any]):
     return "super_user" in context  # TODO user another technique
 
 
-def ensure_super_user(context: Dict[str, Any], message="do this"):
-    if not is_super_user(context):
-        raise ForbiddenError(f"Only super users can {message}")
-
-
 def scale_to_super_user(context: Dict[str, Any] = None) -> Dict[str, Any]:
     if context is None:
         context = {}
@@ -266,14 +250,9 @@ def disable_if_dev(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         DEV_MODE = bool(envars.DEV_MODE)
-        if not DEV_MODE:
-            return f(*args, **kwargs)
+        return None if DEV_MODE else f(*args, **kwargs)
 
     return wrapper
-
-
-class ServiceUnavailableError(ChaliceViewError):
-    STATUS_CODE = 503
 
 
 def utc_now():

@@ -12,31 +12,38 @@ import boto3
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError  # type: ignore
-from chalicelib.controllers import (Domain, SearchResult, SearchResultPaged,
-                                    add_session, ensure_list, ensure_set,
-                                    filter_query, filter_query_doted,
-                                    is_super_user, is_x2m, utc_now)
-from chalicelib.new.config.infra import envars
-from chalicelib.new.config.infra.log import logger as _logger
-from chalicelib.new.shared.domain.primitives import (
-    Identifier, identifier_default_factory)
-from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
-    Company, Model, Permission, User, Workspace)
 from openpyxl import Workbook  # type: ignore
 from sqlalchemy import VARCHAR, cast, or_, text
 from sqlalchemy.orm import Query, relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
+from chalicelib.controllers import (
+    Domain,
+    SearchResult,
+    SearchResultPaged,
+    add_session,
+    ensure_list,
+    ensure_set,
+    filter_query,
+    filter_query_doted,
+    is_super_user,
+    is_x2m,
+    utc_now,
+)
+from chalicelib.new.config.infra import envars
+from chalicelib.new.config.infra.log import logger as _logger
+from chalicelib.new.shared.domain.primitives import Identifier, identifier_default_factory
+from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
+    Company,
+    Model,
+    Permission,
+    User,
+    Workspace,
+)
+
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
-primitives = {
-    str,
-    int,
-    float,
-    bool,
-    date,
-    datetime,
-}
+
 PrimitiveType = Union[str, int, float, bool, date, datetime]
 
 
@@ -94,10 +101,6 @@ resume_fields = (
 
 class CommonController:
     model: Type[Model]
-    BASE_FIELDS = {
-        "id",
-        "created_at",
-    }
 
     restricted_fields = {
         "id",
@@ -124,7 +127,9 @@ class CommonController:
     @classmethod
     def get_controllers_by_model(cls) -> Dict[Type[Model], Type["CommonController"]]:
         controllers = CommonController.__subclasses__()
-        return {getattr(controller, "model", None): controller for controller in controllers}  # type: ignore
+        return {
+            getattr(controller, "model", None): controller for controller in controllers
+        }  # type: ignore
 
     @classmethod
     @add_session
@@ -237,8 +242,8 @@ class CommonController:
         if not order_by:
             order_by = cls._get_default_order_by(session=session)
         try:
-            xml_content_field = cls.model.xml_content
-        except Exception:
+            cls.model.xml_content
+        except Exception:  # TODO analyze
             query = query.distinct()
         if need_count:
             count = query.count()
@@ -607,20 +612,6 @@ class CommonController:
 
     @classmethod
     @add_session
-    @ensure_list
-    @check_context
-    def toggle_archive(cls, records: List[Model], *, session=None, context=None) -> List[Model]:
-        session.add_all(records)
-        base_status = records[0].active
-        cls.ensure_role_access(records, session=session, context=context)
-        if any(base_status != record.active for record in records):
-            raise ForbiddenError("All the records must been in the same status")
-        new_status = not base_status
-        cls.update(records, {"active": new_status}, session=session, context=context)
-        return records
-
-    @classmethod
-    @add_session
     def get_owned_by(cls, user: User, *, session=None, context=None) -> List[Company]:
         session.add(user)
         return session.query(Workspace).filter(Workspace.owner_id == user.id).all()
@@ -793,37 +784,3 @@ class CommonController:
     @add_session
     def resume(domain: Domain, fuzzy_search: str = None, *, session=None, context):
         raise MethodNotAllowedError("Resume not implemented")
-
-
-def get_m2m_repr(m2m_rel, attributes: Set[str]) -> List[Dict[str, Any]]:
-    return [
-        {
-            attrib: getattr(
-                rel,
-                attrib,
-            )
-            for attrib in attributes
-        }
-        for rel in m2m_rel
-    ]
-
-
-def add_if_exists(
-    data: Dict[str, Any],
-    record: Model,
-    main_attrib: str,
-    sub_attrib: str,
-    mapper: Callable[[Any], Any] = None,
-):
-    if mapper is None:
-        mapper = lambda x: x
-    record_attrib = getattr(record, main_attrib)
-    data[main_attrib] = (
-        {
-            **data.get(main_attrib, {}),
-            "id": record_attrib.id,
-            sub_attrib: mapper(getattr(record_attrib, sub_attrib)),
-        }
-        if record_attrib
-        else None
-    )

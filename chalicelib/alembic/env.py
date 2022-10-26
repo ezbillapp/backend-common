@@ -2,18 +2,20 @@ import os
 import re
 import sys
 from logging.config import fileConfig
+from typing import Any
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 parent_dir = os.path.abspath(os.getcwd())
 sys.path.append(parent_dir)
-from chalicelib.schema import connection_uri
-from chalicelib.schema.models import Base  # NOQA
+from chalicelib.schema import connection_uri  # pylint: disable=wrong-import-position
+from chalicelib.schema.models import Base  # NOQA # pylint: disable=wrong-import-position
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config = context.config
+config: Any = context.config  # pylint: disable=no-member
+
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
