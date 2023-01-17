@@ -11,7 +11,7 @@ from zipfile import ZipFile
 import boto3
 import unidecode
 from chalice import ForbiddenError, NotFoundError, UnauthorizedError
-from chalice.app import MethodNotAllowedError  # type: ignore
+from chalice.app import MethodNotAllowedError, Response  # type: ignore
 from openpyxl import Workbook  # type: ignore
 from sqlalchemy import VARCHAR, cast, or_, text
 from sqlalchemy.orm import Query, relationship
@@ -42,7 +42,6 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
 )
 
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
-
 
 PrimitiveType = Union[str, int, float, bool, date, datetime]
 
@@ -215,18 +214,18 @@ class CommonController:
     @classmethod
     @add_session
     def _search(
-        cls,
-        domain: Domain,
-        order_by: str = "",
-        limit: int = None,
-        offset: int = 0,
-        active: bool = True,
-        fuzzy_search: str = None,
-        *,
-        need_count: bool = False,
-        session=None,
-        context=None,
-        lazzy: bool = False,
+            cls,
+            domain: Domain,
+            order_by: str = "",
+            limit: int = None,
+            offset: int = 0,
+            active: bool = True,
+            fuzzy_search: str = None,
+            *,
+            need_count: bool = False,
+            session=None,
+            context=None,
+            lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
         cls.assert_scoped_domain(domain)
         query = session.query(cls.model)
@@ -265,16 +264,16 @@ class CommonController:
     @classmethod
     @add_session
     def search(
-        cls,
-        domain: Domain,
-        order_by: str = "",
-        limit: int = None,
-        offset: int = 0,
-        active: bool = True,
-        fuzzy_search: str = None,
-        *,
-        session=None,
-        context=None,
+            cls,
+            domain: Domain,
+            order_by: str = "",
+            limit: int = None,
+            offset: int = 0,
+            active: bool = True,
+            fuzzy_search: str = None,
+            *,
+            session=None,
+            context=None,
     ) -> SearchResultPaged:
         next_page = False
         records, total_records = cls._search(
@@ -411,12 +410,12 @@ class CommonController:
     @add_session
     @ensure_list
     def detail(
-        cls,
-        records: List[Model],
-        fields: Set[str] = None,
-        *,
-        session=None,
-        context=None,
+            cls,
+            records: List[Model],
+            fields: Set[str] = None,
+            *,
+            session=None,
+            context=None,
     ) -> SearchResult:
         fields = set(fields or []) | cls.default_read_fields
         session.add_all(records)
@@ -518,7 +517,7 @@ class CommonController:
     @classmethod
     @add_session
     def _replace_all_from_m2m(
-        cls, model, field, records: Union[Model, List[Model]], *, session=None
+            cls, model, field, records: Union[Model, List[Model]], *, session=None
     ):
         field.clear()
         records = records if isinstance(records, list) else [records]
@@ -527,7 +526,7 @@ class CommonController:
     @classmethod
     @add_session
     def _set_m2m(
-        cls, model, field, value: List[Tuple[int, Union[int, None, List[int]]]], *, session=None
+            cls, model, field, value: List[Tuple[int, Union[int, None, List[int]]]], *, session=None
     ):
         """Update an m2m field based on the next structure:
         (0, None): NotImplemented
@@ -578,12 +577,12 @@ class CommonController:
     @ensure_list
     @check_context
     def update(
-        cls,
-        records: List[Model],
-        data: Dict[str, Any],
-        *,
-        session=None,
-        context=None,
+            cls,
+            records: List[Model],
+            data: Dict[str, Any],
+            *,
+            session=None,
+            context=None,
     ) -> List[Model]:
         session.add_all(records)
         cls.ensure_role_access(records, session=session, context=context)
@@ -680,7 +679,7 @@ class CommonController:
         for column_cells in ws2.columns:
             length = max(len(str(cell.value)) for cell in column_cells)
             ws2.column_dimensions[column_cells[0].column_letter].width = (
-                length * 1.1
+                    length * 1.1
             )  # Magic Number
 
         with NamedTemporaryFile(suffix="xlsx") as f:
@@ -722,14 +721,14 @@ class CommonController:
     @classmethod
     @add_session
     def export(
-        cls,
-        query: Query,
-        fields: List[str],
-        export_str: str,
-        resume_export=None,
-        *,
-        session,
-        context,
+            cls,
+            query: Query,
+            fields: List[str],
+            export_str: str,
+            resume_export=None,
+            *,
+            session,
+            context,
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         EXPORTERS = {
@@ -784,3 +783,18 @@ class CommonController:
     @add_session
     def resume(domain: Domain, fuzzy_search: str = None, *, session=None, context):
         raise MethodNotAllowedError("Resume not implemented")
+
+    @staticmethod
+    def create_response(status_code, body):
+        return Response(
+            body=body,
+            status_code=status_code,
+            headers={'Content-Type': 'application/json'}
+        )
+
+    @staticmethod
+    def create_error_response(self, status_code, body):
+        return self.create_response(status_code, {
+            "status": "error",
+            "message": body,
+        })
