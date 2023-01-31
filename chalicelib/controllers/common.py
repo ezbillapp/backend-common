@@ -3,6 +3,7 @@ import csv
 import enum
 import functools
 import io
+from dataclasses import dataclass
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
@@ -44,6 +45,45 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
 PrimitiveType = Union[str, int, float, bool, date, datetime]
+
+
+@dataclass
+class ColumnsNameExcel(enum.Enum):
+    Fecha = "Fecha"
+    Version = "Version"
+    Serie = "Serie"
+    Folio = "Folio"
+    RfcReceptor = "Rfc Receptor"
+    NombreReceptor = "Nombre Receptor"
+    RegimenFiscalReceptor = "Regimen Fiscal Receptor"
+    SubtTotal = "Subt Total"
+    Descuento = "Descuento"
+    Neto = "Neto"
+    RetencionesIVA = "Retenciones IVA"
+    RetencionesISR = "Retenciones ISR"
+    TrasladosIVA = "Traslados IVA"
+    Total = "Total"
+    TotalMXN = "Total MXN"
+    Moneda = "Moneda"
+    TipoCambio = "Tipo Cambio"
+    UsoCFDIReceptor = "Uso CFDI Receptor"
+    FormaPago = "Forma de Pago"
+    MetodoPago = "Método de Pago"
+    CondicionesDePago = "Condiciones De Pago"
+    FechaCertificacionSat = "Fecha de certificación"
+    RetencionesIEPS = "Retenciones IEPS"
+    TrasladosIEPS = "Traslados IEPS"
+    TrasladosISR = "Traslados ISR"
+    NoCertificado = "No Certificado"
+    TipoDeComprobante = "Tipo de Comprobante"
+    Exportacion = "Exportacion"
+    Periodicidad = "Periodicidad"
+    Meses = "Meses"
+    CfdiRelacionados = "Cfdi Relacionados"
+    LugarExpedicion = "Lugar Expedicion"
+    UUID = "UUID"
+    balance = "Saldo"
+
 
 
 class ExportFormat(enum.Enum):
@@ -629,7 +669,15 @@ class CommonController:
         wb = Workbook()
         ws = wb.active
         ws.title = "Cfdis"
-        ws.append(fields)
+        fields_names = []
+        for field in fields:
+            if field == "paid_by.UUID_related":
+                fields_names.append("CFDIs De Pago Relacionados")
+            elif field == "efos.state":
+                fields_names.append("Estatus")
+            else:
+                fields_names.append(ColumnsNameExcel[field].value)
+        ws.append(fields_names)
         for record in query:
             data = [_plain_field(record, field) for field in fields]
             ws.append(data)
