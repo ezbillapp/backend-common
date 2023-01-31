@@ -671,7 +671,7 @@ class CommonController:
         ws.title = "Cfdis"
         fields_names = []
         for field in fields:
-            if field == "paid_by.UUID_related":
+            if field == "paid_by.UUID":
                 fields_names.append("CFDIs De Pago Relacionados")
             elif field == "efos.state":
                 fields_names.append("Estatus")
