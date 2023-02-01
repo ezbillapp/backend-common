@@ -31,6 +31,7 @@ from chalicelib.controllers import (
     is_x2m,
     utc_now,
 )
+from chalicelib.new.cfdi_processor.domain.xlsx_exporter import process_iterable
 from chalicelib.new.config.infra import envars
 from chalicelib.new.config.infra.log import logger as _logger
 from chalicelib.new.shared.domain.primitives import Identifier, identifier_default_factory
@@ -681,7 +682,7 @@ class CommonController:
                 fields_names.append(ColumnsNameExcel[field].value)
         ws.append(fields_names)
         for record in query:
-            data = [_plain_field(record, field) for field in fields]
+            data = [process_iterable(_plain_field(record, field)) for field in fields]
             ws.append(data)
         for column_cells in ws.columns:
             length = max(len(str(cell.value)) for cell in column_cells)
