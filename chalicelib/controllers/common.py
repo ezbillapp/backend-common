@@ -682,7 +682,8 @@ class CommonController:
                 fields_names.append(ColumnsNameExcel[field].value)
         ws.append(fields_names)
         for record in query:
-            data = [process_iterable(_plain_field(record, field)) for field in fields]
+            data = [_plain_field(record, field) for field in fields]
+            data = [process_iterable(data_item) if isinstance(data_item, list) else data_item for data_item in data]
             ws.append(data)
         for column_cells in ws.columns:
             length = max(len(str(cell.value)) for cell in column_cells)
