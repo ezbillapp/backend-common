@@ -17,7 +17,7 @@ from openpyxl import Workbook  # type: ignore
 from sqlalchemy import VARCHAR, cast, or_, text
 from sqlalchemy.orm import Query, relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
-
+from chalicelib.new.cfdi_processor.domain.xlsx_exporter import XLSXExporter
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -804,7 +804,8 @@ class CommonController:
             raise NotFoundError("No records found")
         data_bytes = None
         if export_str in ["XLSX", "xlsx"]:
-            data_bytes = exporter(query, fields, resume_export, session, context)
+            xlsx_exporter = XLSXExporter()
+            data_bytes = xlsx_exporter.export(query, fields, resume_export)
         else:
             data_bytes = exporter(query, fields, session, context)
         model_name = cls.model.__name__
