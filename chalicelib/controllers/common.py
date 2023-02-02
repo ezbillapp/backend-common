@@ -6,7 +6,7 @@ import io
 from dataclasses import dataclass
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union, Iterable
 from zipfile import ZipFile
 
 import boto3
@@ -41,7 +41,7 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
     Model,
     Permission,
     User,
-    Workspace,
+    Workspace, CFDI,
 )
 
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
@@ -669,7 +669,7 @@ class CommonController:
         return f.getvalue().encode("utf-8")
 
     @staticmethod
-    def to_xlsx(query: Query, fields: List[str], resume, session, context) -> bytes:
+    def to_xlsx(query: Iterable[CFDI], fields: List[str], resume, session, context) -> bytes:
         wb = Workbook()
         ws = wb.active
         ws.title = "Cfdis"
