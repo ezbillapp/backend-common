@@ -6,7 +6,7 @@ import io
 from dataclasses import dataclass
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union, Iterable
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Type, Union
 from zipfile import ZipFile
 
 import boto3
@@ -17,7 +17,7 @@ from openpyxl import Workbook  # type: ignore
 from sqlalchemy import VARCHAR, cast, or_, text
 from sqlalchemy.orm import Query, relationship
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
-from chalicelib.new.cfdi_processor.domain.xlsx_exporter import XLSXExporter
+
 from chalicelib.controllers import (
     Domain,
     SearchResult,
@@ -25,23 +25,29 @@ from chalicelib.controllers import (
     add_session,
     ensure_list,
     ensure_set,
-    filter_query,
-    filter_query_doted,
+    get_filters,
     is_super_user,
     is_x2m,
     utc_now,
 )
-from chalicelib.new.cfdi_processor.domain.xlsx_exporter import process_iterable
+from chalicelib.new.cfdi_processor.domain.xlsx_exporter import (
+    XLSXExporter,
+    process_iterable,
+)
 from chalicelib.new.config.infra import envars
 from chalicelib.new.config.infra.log import logger as _logger
 from chalicelib.new.model_serializer.app.model_serializer import ModelSerializer
-from chalicelib.new.shared.domain.primitives import Identifier, identifier_default_factory
+from chalicelib.new.shared.domain.primitives import (
+    Identifier,
+    identifier_default_factory,
+)
 from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
+    CFDI,
     Company,
     Model,
     Permission,
     User,
-    Workspace, CFDI,
+    Workspace,
 )
 
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
@@ -87,7 +93,6 @@ class ColumnsNameExcel(enum.Enum):
     LugarExpedicion = "Lugar Expedicion"
     UUID = "UUID"
     balance = "Saldo"
-
 
 
 class ExportFormat(enum.Enum):
@@ -241,35 +246,26 @@ class CommonController:
         return ", ".join(scaped)
 
     @classmethod
-    def apply_domain(cls, query, domain: List[Tuple[str, str, Any]], session):
-        domain_doted = []
-        domain_no_doted = []
-        for t in domain:
-            if t[0].find(".") != -1:
-                domain_doted.append(t)
-            else:
-                domain_no_doted.append(t)
-        query = filter_query_doted(cls.model, query, domain_doted, session)
-
-        domain_parsed = filter_query(cls.model, domain_no_doted, session)
-        query = query.filter(*domain_parsed)
+    def apply_domain(cls, query, domain: Domain, session):
+        filters = get_filters(query, cls.model, domain, session)
+        query = query.filter(*filters)
         return query
 
     @classmethod
     @add_session
     def _search(
-            cls,
-            domain: Domain,
-            order_by: str = "",
-            limit: int = None,
-            offset: int = 0,
-            active: bool = True,
-            fuzzy_search: str = None,
-            *,
-            need_count: bool = False,
-            session=None,
-            context=None,
-            lazzy: bool = False,
+        cls,
+        domain: Domain,
+        order_by: str = "",
+        limit: int = None,
+        offset: int = 0,
+        active: bool = True,
+        fuzzy_search: str = None,
+        *,
+        need_count: bool = False,
+        session=None,
+        context=None,
+        lazzy: bool = False,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
         cls.assert_scoped_domain(domain)
         query = session.query(cls.model)
@@ -308,16 +304,16 @@ class CommonController:
     @classmethod
     @add_session
     def search(
-            cls,
-            domain: Domain,
-            order_by: str = "",
-            limit: int = None,
-            offset: int = 0,
-            active: bool = True,
-            fuzzy_search: str = None,
-            *,
-            session=None,
-            context=None,
+        cls,
+        domain: Domain,
+        order_by: str = "",
+        limit: int = None,
+        offset: int = 0,
+        active: bool = True,
+        fuzzy_search: str = None,
+        *,
+        session=None,
+        context=None,
     ) -> SearchResultPaged:
         next_page = False
         records, total_records = cls._search(
@@ -454,12 +450,12 @@ class CommonController:
     @add_session
     @ensure_list
     def detail(
-            cls,
-            records: List[Model],
-            fields: Set[str] = None,
-            *,
-            session=None,
-            context=None,
+        cls,
+        records: List[Model],
+        fields: Set[str] = None,
+        *,
+        session=None,
+        context=None,
     ) -> SearchResult:
         fields = set(fields or []) | cls.default_read_fields
         session.add_all(records)
@@ -561,7 +557,7 @@ class CommonController:
     @classmethod
     @add_session
     def _replace_all_from_m2m(
-            cls, model, field, records: Union[Model, List[Model]], *, session=None
+        cls, model, field, records: Union[Model, List[Model]], *, session=None
     ):
         field.clear()
         records = records if isinstance(records, list) else [records]
@@ -570,7 +566,7 @@ class CommonController:
     @classmethod
     @add_session
     def _set_m2m(
-            cls, model, field, value: List[Tuple[int, Union[int, None, List[int]]]], *, session=None
+        cls, model, field, value: List[Tuple[int, Union[int, None, List[int]]]], *, session=None
     ):
         """Update an m2m field based on the next structure:
         (0, None): NotImplemented
@@ -621,12 +617,12 @@ class CommonController:
     @ensure_list
     @check_context
     def update(
-            cls,
-            records: List[Model],
-            data: Dict[str, Any],
-            *,
-            session=None,
-            context=None,
+        cls,
+        records: List[Model],
+        data: Dict[str, Any],
+        *,
+        session=None,
+        context=None,
     ) -> List[Model]:
         session.add_all(records)
         cls.ensure_role_access(records, session=session, context=context)
@@ -732,7 +728,7 @@ class CommonController:
         for column_cells in ws2.columns:
             length = max(len(str(cell.value)) for cell in column_cells)
             ws2.column_dimensions[column_cells[0].column_letter].width = (
-                    length * 1.1
+                length * 1.1
             )  # Magic Number
 
         with NamedTemporaryFile(suffix="xlsx") as f:
@@ -774,14 +770,14 @@ class CommonController:
     @classmethod
     @add_session
     def export(
-            cls,
-            query: Query,
-            fields: List[str],
-            export_str: str,
-            resume_export=None,
-            *,
-            session,
-            context,
+        cls,
+        query: Query,
+        fields: List[str],
+        export_str: str,
+        resume_export=None,
+        *,
+        session,
+        context,
     ) -> Dict[str, str]:
         export_format = ExportFormat[export_str]
         EXPORTERS = {
@@ -841,14 +837,15 @@ class CommonController:
     @staticmethod
     def create_response(status_code, body):
         return Response(
-            body=body,
-            status_code=status_code,
-            headers={'Content-Type': 'application/json'}
+            body=body, status_code=status_code, headers={"Content-Type": "application/json"}
         )
 
     @staticmethod
     def create_error_response(self, status_code, body):
-        return self.create_response(status_code, {
-            "status": "error",
-            "message": body,
-        })
+        return self.create_response(
+            status_code,
+            {
+                "status": "error",
+                "message": body,
+            },
+        )

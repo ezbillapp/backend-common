@@ -2,10 +2,9 @@ import functools
 import operator
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, List, Set, Tuple, Type
+from typing import Any, Dict, List, Set, Tuple, Type, Union
 
-from chalice import BadRequestError, ChaliceViewError, ForbiddenError
-from sqlalchemy import Float, Integer, Numeric
+from chalice import BadRequestError
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import Session
 
@@ -16,7 +15,10 @@ from chalicelib.schema.models.model import Model
 
 DECIMAL_PLACES = 6
 
-Domain = List[Tuple[str, str, Any]]
+DomainElement = Tuple[str, str, Any]
+Operand = Any
+Filter = Any
+Domain = List[Union[DomainElement, Operand]]
 SearchResult = List[Dict[str, Any]]
 SearchResultPaged = Tuple[SearchResult, bool, int]
 
@@ -87,8 +89,37 @@ def _get_filter_m2o(column, op, value, session):
     raise BadRequestError("Only the operators '=' and '!=' are accepted in relations")
 
 
-def get_filter(model, raw, session=None):
-    key, op, value = raw
+def is_doted(de: DomainElement) -> bool:
+    return de[0].find(".") != -1
+
+
+def get_filter(query, model, de: DomainElement, session=None):
+    if is_doted(de):
+        return _get_filter_doted(query, model, de, session)
+    return _get_filter(de, model, session)
+
+
+def _get_filter_doted(query, model, domain: Domain, session):
+    join_models = {}
+    filters = []
+    for raw in domain:
+        key, op, value = raw
+        tokens = key.split(".")
+        relations, field = tokens[:-1], tokens[-1]
+        current_model = model
+        for rel in relations:
+            attrib = getattr(current_model, rel)
+            f = getattr(current_model, rel)
+            current_model = get_model_from_relationship(attrib)
+            join_models[current_model] = f.property.primaryjoin
+        filters.append(_get_filter(current_model, (field, op, value), session))
+    for jm, on in join_models.items():
+        query = query.join(jm, on)
+    return filters
+
+
+def _get_filter(model, de: DomainElement, session=None):
+    key, op, value = de
     column = getattr(model, key)
     if is_m2o(column):
         return _get_filter_m2o(column, op, value, session)
@@ -105,27 +136,11 @@ def get_filter(model, raw, session=None):
     return real_op(column, value)
 
 
-def filter_query(model, raw_filters, session):
-    return [get_filter(model, raw, session) for raw in raw_filters]
-
-
-def filter_query_doted(model, query, domain: Domain, session):
-    join_models = {}
+def get_filters(query, model, domain: Domain, session) -> List[Filter]:
     filters = []
-    for raw in domain:
-        key, op, value = raw
-        tokens = key.split(".")
-        relations, field = tokens[:-1], tokens[-1]
-        current_model = model
-        for rel in relations:
-            attrib = getattr(current_model, rel)
-            f = getattr(current_model, rel)
-            current_model = get_model_from_relationship(attrib)
-            join_models[current_model] = f.property.primaryjoin
-        filters.append(get_filter(current_model, (field, op, value), session))
-    for jm, on in join_models.items():
-        query = query.join(jm, on)
-    return query.filter(*filters)
+    for dt in domain:
+        filters.append(get_filter(query, model, dt, session))
+    return filters
 
 
 def ensure_list(f):
