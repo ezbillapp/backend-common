@@ -49,7 +49,7 @@ EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
 PrimitiveType = Union[str, int, float, bool, date, datetime]
 
-LIMIT_RESPONSE = 2
+LIMIT_RESPONSE = 20
 FIELDS_TO_LIMIT = ["Conceptos"]
 
 
