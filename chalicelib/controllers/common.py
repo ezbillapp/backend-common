@@ -266,11 +266,14 @@ class CommonController:
         session=None,
         context=None,
         lazzy: bool = False,
+        internal_domain: List[Any] = None,
     ) -> Union[List[Model], Tuple[List[Model], int]]:
         cls.assert_scoped_domain(domain)
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
+        if internal_domain:
+            query = query.filter(*internal_domain)
         query = cls.apply_domain(query, domain, session)
         if "active" in cls.model.__table__.c:
             active_filter = cls.model.active == active
@@ -287,7 +290,7 @@ class CommonController:
         if need_count:
             count = query.count()
         order_by = cls._normalize_order_by(cls.model, order_by)
-        query: Query = query.order_by(text(order_by))
+        query = query.order_by(text(order_by))
         if lazzy:
             return query
         if limit is not None:
@@ -312,6 +315,7 @@ class CommonController:
         active: bool = True,
         fuzzy_search: str = None,
         *,
+        internal_domain: List[Any] = None,
         session=None,
         context=None,
     ) -> SearchResultPaged:
@@ -326,6 +330,7 @@ class CommonController:
             session=session,
             context=context,
             need_count=True,
+            internal_domain=internal_domain,
         )
         if limit and len(records) > limit:
             records.pop()

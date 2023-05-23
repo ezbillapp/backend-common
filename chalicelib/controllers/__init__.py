@@ -96,7 +96,7 @@ def is_doted(de: DomainElement) -> bool:
 def get_filter(query, model, de: DomainElement, session=None):
     if is_doted(de):
         return _get_filter_doted(query, model, de, session)
-    return _get_filter(de, model, session)
+    return _get_filter(model, de, session)
 
 
 def _get_filter_doted(query, model, domain: Domain, session):
