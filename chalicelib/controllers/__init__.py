@@ -187,6 +187,10 @@ def _local_session():
 def new_session():
     return _local_session() if envars.LOCAL_INFRA else _real_session()
 
+@contextmanager
+def super_new_session():
+    return _real_session()
+
 
 def _real_session():
     session = Session(bind=engine)
