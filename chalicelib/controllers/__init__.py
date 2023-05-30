@@ -1,4 +1,5 @@
 import functools
+import inspect
 import operator
 from contextlib import contextmanager
 from datetime import datetime
@@ -121,6 +122,8 @@ def _get_filter_doted(query, model, domain: Domain, session):
 def _get_filter(model, de: DomainElement, session=None):
     key, op, value = de
     column = getattr(model, key)
+    if inspect.ismethod(column):
+        return column() if value else ~column()
     if is_m2o(column):
         return _get_filter_m2o(column, op, value, session)
     if is_x2m(model, key):
@@ -186,6 +189,7 @@ def _local_session():
 @contextmanager
 def new_session():
     return _local_session() if envars.LOCAL_INFRA else _real_session()
+
 
 @contextmanager
 def super_new_session():
