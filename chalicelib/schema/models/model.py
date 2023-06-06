@@ -52,6 +52,7 @@ class Model(BasicModel):
         IdentifierORM(),
         index=True,
         unique=True,
+        default=identifier_default_factory,
         # nullable=False, # TODO make not nullable
     )
 
