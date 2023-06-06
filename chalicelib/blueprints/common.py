@@ -35,6 +35,7 @@ def export(bp, controller: CommonController):
     search_attrs["limit"] = None
     search_attrs["offset"] = None
     fields = json_body.get("fields", [])
+    fields = tuple(fields)
     export_format = json_body.get("format", "csv")
     resume_export = None
     if export_format in ["xlsx", "XLSX"]:
