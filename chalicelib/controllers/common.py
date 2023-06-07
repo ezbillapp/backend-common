@@ -272,7 +272,7 @@ class CommonController:
         query = session.query(cls.model)
         if fuzzy_search:
             query = cls._fuzzy_search(query, fuzzy_search, session=session)
-        if internal_domain:
+        if internal_domain is not None:
             query = query.filter(internal_domain)
         query = cls.apply_domain(query, domain, session)
         if "active" in cls.model.__table__.c:
