@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Set, Tuple, Type, Union
 
 from chalice import BadRequestError
+from sqlalchemy import and_
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import Session
 
@@ -62,10 +63,15 @@ def _get_x2m_relational_filter(column, op, value):
     return res
 
 
-def _get_filter_x2m(column, op, value):
+def _get_filter_x2m(column, op, value, company_identifier):
+    rel_model = get_model_from_relationship(column)
     if op in ("=", "!="):
-        return _get_x2m_cardinal_filter(column, op, value)
-    return _get_x2m_relational_filter(column, op, value)
+        f = _get_x2m_cardinal_filter(column, op, value)
+    else:
+        f = _get_x2m_relational_filter(column, op, value)
+    if company_identifier and getattr(rel_model, "company_identifier", None):
+        f = and_(f, getattr(rel_model, "company_identifier") == company_identifier)
+    return f
 
 
 def is_m2o(column):
@@ -94,13 +100,13 @@ def is_doted(de: DomainElement) -> bool:
     return de[0].find(".") != -1
 
 
-def get_filter(query, model, de: DomainElement, session=None):
+def get_filter(query, model, de: DomainElement, session=None, company_identifier: str = None):
     if is_doted(de):
-        return _get_filter_doted(query, model, de, session)
-    return _get_filter(model, de, session)
+        return _get_filter_doted(query, model, de, session, company_identifier)
+    return _get_filter(model, de, session, company_identifier)
 
 
-def _get_filter_doted(query, model, domain: Domain, session):
+def _get_filter_doted(query, model, domain: Domain, session, company_identifier):
     join_models = {}
     filters = []
     for raw in domain:
@@ -112,14 +118,19 @@ def _get_filter_doted(query, model, domain: Domain, session):
             attrib = getattr(current_model, rel)
             f = getattr(current_model, rel)
             current_model = get_model_from_relationship(attrib)
-            join_models[current_model] = f.property.primaryjoin
+            on_clausule = f.property.primaryjoin
+            if company_identifier and getattr(current_model, "company_identifier", None):
+                on_clausule = and_(
+                    on_clausule, getattr(current_model, "company_identifier") == company_identifier
+                )
+            join_models[current_model] = on_clausule
         filters.append(_get_filter(current_model, (field, op, value), session))
     for jm, on in join_models.items():
         query = query.join(jm, on)
     return filters
 
 
-def _get_filter(model, de: DomainElement, session=None):
+def _get_filter(model, de: DomainElement, session=None, company_identifier=None):
     key, op, value = de
     column = getattr(model, key)
     if inspect.ismethod(column):
@@ -127,7 +138,7 @@ def _get_filter(model, de: DomainElement, session=None):
     if is_m2o(column):
         return _get_filter_m2o(column, op, value, session)
     if is_x2m(model, key):
-        return _get_filter_x2m(column, op, value)
+        return _get_filter_x2m(column, op, value, company_identifier)
 
     if op == "in":
         return column.in_(value)
@@ -141,9 +152,18 @@ def _get_filter(model, de: DomainElement, session=None):
 
 def get_filters(query, model, domain: Domain, session) -> List[Filter]:
     filters = []
+    company_identifier = get_company_identifier(domain)
     for dt in domain:
-        filters.append(get_filter(query, model, dt, session))
+        filters.append(get_filter(query, model, dt, session, company_identifier))
     return filters
+
+
+def get_company_identifier(domain: Domain) -> str:
+    for dt in domain:
+        key, op, value = dt
+        if key == "company_identifier" and op == "=":
+            return value
+    return None
 
 
 def ensure_list(f):
