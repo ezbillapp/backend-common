@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Column, DateTime, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql.schema import Table
 
 from chalicelib.new.shared.domain.primitives import identifier_default_factory
@@ -10,7 +10,9 @@ from chalicelib.new.shared.infra.primitives import IdentifierORM
 
 from .. import meta
 
-Base: Any = declarative_base(metadata=meta)
+
+class Base(DeclarativeBase):
+    metadata = meta
 
 
 class BasicModel(Base):

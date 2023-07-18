@@ -114,7 +114,7 @@ def _get_filter_doted(query, model, domain: Domain, session):
             current_model = get_model_from_relationship(attrib)
             join_models[current_model] = f.property.primaryjoin
         filters.append(_get_filter(current_model, (field, op, value), session))
-    for jm, on in join_models.items():
+    for jm, on in join_models.items():  # TODO scope per company
         query = query.join(jm, on)
     return filters
 
