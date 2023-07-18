@@ -15,7 +15,7 @@ from chalice import ForbiddenError, NotFoundError, UnauthorizedError
 from chalice.app import MethodNotAllowedError, Response  # type: ignore
 from openpyxl import Workbook  # type: ignore
 from sqlalchemy import VARCHAR, cast, or_, text
-from sqlalchemy.orm import Query, relationship
+from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import ReturnTypeFromArgs
 
 from chalicelib.controllers import (
@@ -169,7 +169,7 @@ class CommonController:
     pseudo_enums: Dict[str, Set[str]] = {}
 
     fuzzy_fields: Tuple[Any, ...] = ()
-    fuzzy_has: Dict[relationship, Tuple[str, ...]] = {}
+    fuzzy_has: Dict[Any, Tuple[str, ...]] = {}
     _order_by: str = ""
 
     @classmethod
