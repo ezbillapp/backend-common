@@ -41,37 +41,44 @@ def get_model_from_relationship(relationship) -> Model:
     return relationship.property.mapper.class_
 
 
-def _get_x2m_cardinal_filter(column, op, value):
+def _get_x2m_cardinal_filter(column, op, value, company_identifier):
     if value != "any":
         raise BadRequestError("Only value 'any' is accepted in relations")
-    if op == "=":
-        return column.any()
+    if op not in ("=", "!="):
+        raise BadRequestError("Only the operators '=' and '!=' are accepted in relations")
+
+    any_arg = None
+    rel_model = get_model_from_relationship(column)
+    if company_identifier and getattr(rel_model, "company_identifier", None):
+        any_arg = rel_model.company_identifier == company_identifier
+
+    res = column.any(any_arg)
+
     if op == "!=":
-        return ~column.any()
-    raise BadRequestError("Only the operators '=' and '!=' are accepted in relations")
+        res = ~res
+    return res
 
 
-def _get_x2m_relational_filter(column, op, value):
+def _get_x2m_relational_filter(column, op, value, company_identifier):
     if not isinstance(value, list):
         raise BadRequestError(f"Invalid value for m2m field {column}, must be a list")
     if op not in ("in", "not in"):
         raise BadRequestError(f"Invalid operator {op} for m2m field")
     rel_model = get_model_from_relationship(column)
-    res = column.any(rel_model.id.in_(value))
+    any_arg = rel_model.id.in_(value)
+    if company_identifier and getattr(rel_model, "company_identifier", None):
+        any_arg = and_(any_arg, rel_model.company_identifier == company_identifier)
+    res = column.any(any_arg)
     if op == "not in":
         res = ~res
     return res
 
 
 def _get_filter_x2m(column, op, value, company_identifier):
-    rel_model = get_model_from_relationship(column)
     if op in ("=", "!="):
-        f = _get_x2m_cardinal_filter(column, op, value)
-    else:
-        f = _get_x2m_relational_filter(column, op, value)
-    if company_identifier and getattr(rel_model, "company_identifier", None):
-        f = and_(f, getattr(rel_model, "company_identifier") == company_identifier)
-    return f
+        return _get_x2m_cardinal_filter(column, op, value, company_identifier)
+
+    return _get_x2m_relational_filter(column, op, value, company_identifier)
 
 
 def is_m2o(column):
