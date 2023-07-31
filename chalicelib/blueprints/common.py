@@ -3,6 +3,7 @@ from chalice import CORSConfig, UnauthorizedError
 from chalicelib.config import PAGE_SIZE
 from chalicelib.controllers.common import CommonController
 from chalicelib.controllers.user import UserController
+from chalicelib.new.config.infra.log import logger
 
 cors_config = CORSConfig(
     allow_origin="*",
@@ -52,6 +53,7 @@ def export(bp, controller: CommonController):
     query = controller._search(  # pylint: disable=protected-access
         **search_attrs, context=context, lazzy=True
     )
+    logger.error("query: %s", query)
     return controller.export(query, fields, export_format, resume_export, context=context)
 
 
