@@ -3,6 +3,7 @@ import csv
 import enum
 import functools
 import io
+import json
 from dataclasses import dataclass
 from datetime import date, datetime
 from tempfile import NamedTemporaryFile
@@ -53,6 +54,9 @@ from chalicelib.schema.models import (  # pylint: disable=no-name-in-module
 EXPORT_EXPIRATION = 60 * 60 * 24 * 7
 
 PrimitiveType = Union[str, int, float, bool, date, datetime]
+
+LIMIT_RESPONSE = 20
+FIELDS_TO_LIMIT = ["Conceptos"]
 
 
 @dataclass
@@ -463,9 +467,41 @@ class CommonController:
         context=None,
     ) -> SearchResult:
         fields = set(fields or []) | cls.default_read_fields
+        print("FIELDS:", fields)
         session.add_all(records)
         cls.ensure_role_access(records, session=session, context=context)
-        return [cls.record_to_dict(record, fields) for record in records]
+        search_result =  [cls.record_to_dict(record, fields) for record in records]
+        result = cls.limit_field_response(search_result)
+        return result
+
+
+    @classmethod
+    def limit_field_response(self, data: SearchResult) -> SearchResult:
+        for record in data:
+            for field in FIELDS_TO_LIMIT:
+                if field in record:
+                    field_value = record[field]
+                    if isinstance(field_value, str):
+                        try:
+                            field_value = json.loads(field_value)
+                            print("FIELD VALUE:", field_value)
+                        except json.decoder.JSONDecodeError:
+                            continue
+
+                    if isinstance(field_value, dict):
+                        limited_dict = {}
+                        print("is dict")
+                        for key in list(field_value.keys())[:LIMIT_RESPONSE]:
+                            if isinstance(field_value[key], list):
+                                if len(field_value[key]) > LIMIT_RESPONSE:
+                                    print("LIMITING LIST", field_value[key], len(field_value[key]))
+                                    limited_dict[key] = field_value[key][:LIMIT_RESPONSE]
+                                    print("LIMITED", limited_dict, len(limited_dict[key]))
+
+                        record[field] = json.dumps(limited_dict) if isinstance(limited_dict, dict) else limited_dict
+
+        print("LIMITED DATA:", data)
+        return data
 
     @classmethod
     @add_session
