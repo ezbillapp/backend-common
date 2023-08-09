@@ -113,28 +113,26 @@ def get_filter(query, model, de: DomainElement, session=None, company_identifier
     return _get_filter(model, de, session, company_identifier)
 
 
-def _get_filter_doted(query, model, domain: Domain, session, company_identifier):
+def _get_filter_doted(query, model, domain: DomainElement, session, company_identifier):
     join_models = {}
-    filters = []
-    for raw in domain:
-        key, op, value = raw
-        tokens = key.split(".")
-        relations, field = tokens[:-1], tokens[-1]
-        current_model = model
-        for rel in relations:
-            attrib = getattr(current_model, rel)
-            f = getattr(current_model, rel)
-            current_model = get_model_from_relationship(attrib)
-            on_clausule = f.property.primaryjoin
-            if company_identifier and getattr(current_model, "company_identifier", None):
-                on_clausule = and_(
-                    on_clausule, getattr(current_model, "company_identifier") == company_identifier
-                )
-            join_models[current_model] = on_clausule
-        filters.append(_get_filter(current_model, (field, op, value), session))
+    key, op, value = domain
+    tokens = key.split(".")
+    relations, field = tokens[:-1], tokens[-1]
+    current_model = model
+    for rel in relations:
+        attrib = getattr(current_model, rel)
+        f = getattr(current_model, rel)
+        current_model = get_model_from_relationship(attrib)
+        on_clausule = f.property.primaryjoin
+        if company_identifier and getattr(current_model, "company_identifier", None):
+            on_clausule = and_(
+                on_clausule, getattr(current_model, "company_identifier") == company_identifier
+            )
+        join_models[current_model] = on_clausule
+    filter_doted = _get_filter(current_model, (field, op, value), session)
     for jm, on in join_models.items():
         query = query.join(jm, on)
-    return filters
+    return filter_doted
 
 
 def _get_filter(model, de: DomainElement, session=None, company_identifier=None):
