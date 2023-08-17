@@ -110,7 +110,7 @@ def is_doted(de: DomainElement) -> bool:
 def get_filter(query, model, de: DomainElement, session=None, company_identifier: str = None):
     if is_doted(de):
         return _get_filter_doted(query, model, de, session, company_identifier)
-    return _get_filter(model, de, session, company_identifier)
+    return query, _get_filter(model, de, session, company_identifier)
 
 
 def _get_filter_doted(query, model, domain: DomainElement, session, company_identifier):
@@ -132,7 +132,7 @@ def _get_filter_doted(query, model, domain: DomainElement, session, company_iden
     filter_doted = _get_filter(current_model, (field, op, value), session)
     for jm, on in join_models.items():
         query = query.join(jm, on)
-    return filter_doted
+    return query, filter_doted
 
 
 def _get_filter(model, de: DomainElement, session=None, company_identifier=None):
@@ -159,8 +159,9 @@ def get_filters(query, model, domain: Domain, session) -> List[Filter]:
     filters = []
     company_identifier = get_company_identifier(domain)
     for dt in domain:
-        filters.append(get_filter(query, model, dt, session, company_identifier))
-    return filters
+        query, filter = get_filter(query, model, dt, session, company_identifier)
+        filters.append(filter)
+    return query, filters
 
 
 def get_company_identifier(domain: Domain) -> str:

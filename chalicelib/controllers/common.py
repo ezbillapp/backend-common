@@ -247,7 +247,7 @@ class CommonController:
 
     @classmethod
     def apply_domain(cls, query, domain: Domain, session):
-        filters = get_filters(query, cls.model, domain, session)
+        query, filters = get_filters(query, cls.model, domain, session)
         query = query.filter(*filters)
         return query
 
