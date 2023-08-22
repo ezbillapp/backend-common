@@ -53,7 +53,6 @@ def export(bp, controller: CommonController):
     query = controller._search(  # pylint: disable=protected-access
         **search_attrs, context=context, lazzy=True
     )
-    logger.error("query: %s", query)
     return controller.export(query, fields, export_format, resume_export, context=context)
 
 
